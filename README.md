@@ -2,7 +2,7 @@
 Proyecto Compiladores
 
 # Ejercicio 1, extención de gramática de expresiones
-
+```
 S -> Type Id () {P}
 P -> E''' E' R
 R -> return; | return E; | λ
@@ -24,11 +24,12 @@ Num -> -Num' | Num'
 Num' -> (0...9) Num''
 Num'' -> (0...9) Num'' | λ
 Type -> int|bool|void
-
+```
 # Ejercicio 2, definiciones de estructuras
-
+```
 ID: (A...Z|a...z)(0...9|a...z|A...Z)*
 CTTE: (0...9)+| True |False
 OP: + | * | || | && | =
 DELIM: '(' | ')' | '{' | '}'
 RW: "main"
+```
