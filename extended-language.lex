@@ -1,7 +1,7 @@
 %top{
 #include <stdio.h>
 enum Tokens {
-    T_TYPE, T_RETURN, T_BOOL, T_NUM, T_ID, 
+    T_TYPE = 257, T_RETURN, T_BOOL, T_NUM, T_ID, 
     T_AND, T_OR, T_SUMA, T_MULT, T_RESTA, 
     T_ASIGN, T_PUNTO_COMA, T_PAR_IZQ, T_PAR_DER, 
     T_LLAVE_IZQ, T_LLAVE_DER
