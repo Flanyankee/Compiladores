@@ -22,12 +22,12 @@ RETURN "return"
 {NUM} {return T_NUM;}
 {ID} {return T_ID;}
 
-"&&" {return T_AND;}
-"||" {return T_OR;}
-"+" {return T_SUMA;}
-"*" {return T_MULT;}
-"-" {return T_RESTA;}
-"=" {return T_ASIGN;}
+"&&" {return OP_AND;}
+"||" {return OP_OR;}
+"+" {return OP_SUMA;}
+"*" {return OP_MULT;}
+"-" {return OP_RESTA;}
+"=" {return OP_ASIGN;}
 ";" {return T_PUNTO_COMA;}
 "(" {return T_PAR_IZQ;}
 ")" {return T_PAR_DER;}
