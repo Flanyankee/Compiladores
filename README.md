@@ -1,14 +1,21 @@
 # Compiladores
 Proyecto Compiladores
 
+- Para generar el scanner con flex
+`flex extended-language.lex`
+- Para generar la tabla de parsing
+`bison -vd extended-launguage.y`
+- Para compilar el parser
+`gcc extended-language.tab.c lex.yy.c -lfl -o nombre-ejecutable`
+
 # Ejercicio 1, extención de gramática de expresiones
 ```
 S -> Type Id () {P}
 P -> E''' E' R
-R -> return; | return E; | λ
-E''' -> Type Id; | Type E'' | E''' E'''
+R -> return; R | return E; R | λ
+E''' -> Type Id; E''' | Type E'' E''' | λ
 E'' -> Id = E;
-E' -> E'' | E'' E'
+E' -> E'' E' | λ
 E -> E + E
    | E * E
    | (E)

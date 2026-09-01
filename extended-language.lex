@@ -1,11 +1,6 @@
 %top{
 #include <stdio.h>
-enum Tokens {
-    T_TYPE = 257, T_RETURN, T_BOOL, T_NUM, T_ID, 
-    OP_AND, OP_OR, OP_SUMA, OP_MULT, OP_RESTA, 
-    OP_ASIGN, T_PUNTO_COMA, T_PAR_IZQ, T_PAR_DER, 
-    T_LLAVE_IZQ, T_LLAVE_DER
-};
+#include "extended-language.tab.h"
 }
 
 TYPE ("int"|"bool"|"void")
@@ -35,8 +30,3 @@ RETURN "return"
 "}" {return T_LLAVE_DER;}
 
 . { }
-
-%%
-int main() {
-	yylex();
-}
