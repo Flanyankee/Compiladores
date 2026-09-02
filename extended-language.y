@@ -32,20 +32,20 @@ void yyerror(const char *s);
 S : T_TYPE  T_ID  T_PAR_IZQ T_PAR_DER T_LLAVE_IZQ P T_LLAVE_DER {printf("\nSe detecto el cuerpo de una funcion\n");}
   ;
 
-P : E_triple E_prima R
+P : E_triple E_prima
   ;
 
-R : T_RETURN T_PUNTO_COMA R
-  | T_RETURN E T_PUNTO_COMA R
-  | 
+R : T_RETURN T_PUNTO_COMA
+  | T_RETURN E T_PUNTO_COMA
   ;
 
 E_triple : T_TYPE T_ID T_PUNTO_COMA E_triple
-	 | T_TYPE E_doble E_triple
+	 | T_TYPE T_ID OP_ASIGN E T_PUNTO_COMA E_triple
 	 | 
 	 ;
 
 E_doble : T_ID OP_ASIGN E T_PUNTO_COMA
+	| R
 	;
 
 E_prima : E_doble E_prima

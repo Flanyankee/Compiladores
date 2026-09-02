@@ -11,10 +11,10 @@ Proyecto Compiladores
 # Ejercicio 1, extención de gramática de expresiones
 ```
 S -> Type Id () {P}
-P -> E''' E' R
-R -> return; R | return E; R | λ
-E''' -> Type Id; E''' | Type E'' E''' | λ
-E'' -> Id = E;
+P -> E''' E'
+R -> return; | return E;
+E''' -> Type Id; E''' | Type Id = E; E''' | λ
+E'' -> Id = E; | R
 E' -> E'' E' | λ
 E -> E + E
    | E * E
