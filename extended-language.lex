@@ -11,11 +11,11 @@ RETURN "return"
 
 %%
 
-{TYPE} {return T_TYPE;}
-{RETURN} {return T_RETURN;}
-{BOOL} {return T_BOOL;}
-{NUM} {return T_NUM;}
-{ID} {return T_ID;}
+{TYPE} {yylval.str = strdup(yytext); return T_TYPE;}
+{RETURN} {yylval.str = strdup(yytext); return T_RETURN;}
+{BOOL} {yylval.str = strdup(yytext); return T_BOOL;}
+{NUM} {yylval.str = strdup(yytext); return T_NUM;}
+{ID} {yylval.str = strdup(yytext); return T_ID;}
 
 "&&" {return OP_AND;}
 "||" {return OP_OR;}
