@@ -7,6 +7,11 @@ Proyecto Compiladores
 `bison -vd extended-launguage.y`
 - Para compilar el parser
 `gcc extended-language.tab.c lex.yy.c -lfl -o nombre-ejecutable`
+- Para graficar con dot
+```
+./nombre-ejecutable < text.txt > nombre-arbol.dot 
+dot -Tpng nombre-arbol.dot -o nombre-imagen.png
+```
 
 # Ejercicio 1, extención de gramática de expresiones
 ```
