@@ -75,6 +75,9 @@ S   : T_TYPE T_ID T_PAR_IZQ T_PAR_DER T_LLAVE_IZQ P T_LLAVE_DER {
 	Symbol* s = makeSymbol($2, "FUNC", $1);
 	$$ = makeNode(s, $6, NULL);
         printDOT($$);
+
+        printf("\n Inicio de Ejecucion \n");
+        evaluate($$);
     }
     ;
 
@@ -96,28 +99,49 @@ R   : T_RETURN T_PUNTO_COMA {
     	Hago lo mismo pero asignandole el tipo al return
 	de la expresion que devuelve.
     */
-	Symbol* s = makeSymbol($1, "", $2->symbolData->type);
-	s->value = $2->symbolData->value;
-	s->hasValue = $2->symbolData->hasValue;
+	    Symbol* s = makeSymbol($1, "RET", $2->symbolData->type);
         $$ = makeNode(s, NULL, $2); 
     }
     ;
 
 E_triple 
     : T_TYPE T_ID T_PUNTO_COMA E_triple { 
-	Symbol* s = makeSymbol($2, "VAR", $1);
-        $$ = makeNode(s, NULL, $4); 
+        Symbol sAux;
+        sAux.id = $2;
+        if (findSymbol(&sAux) != NULL) yyerror("Error: Variable ya declarada");
+
+        Symbol* s = makeSymbol($2, "VAR", $1);
+        addSymbolToTab(s);
+        $$ = makeNode(s, NULL, $4);
+        
     }
     | T_TYPE T_ID OP_ASIGN E T_PUNTO_COMA E_triple { 
-	Symbol* s = makeSymbol($2, "VAR", $1);
-	$$ = makeNode(s, NULL, $6);
+	Symbol sAux;
+        sAux.id = $2;
+        if (findSymbol(&sAux) != NULL) yyerror("Error: Variable ya declarada");
+
+        Symbol* s = makeSymbol($2, "VAR", $1);
+        addSymbolToTab(s); 
+        
+        Symbol* asig = makeSymbol("=", "OP", $1);
+        ASTNode* assignNode = makeNode(asig, makeLeaf(s), $4);
+        
+        $$ = makeNode(s, assignNode, $6);
     }
-    | /* Producci�n vac�a */ { $$ = NULL; }
+    | /* Produccin vaca */ { $$ = NULL; }
     ;
 
 E_doble 
-    : T_ID OP_ASIGN E T_PUNTO_COMA {	Symbol* s = makeSymbol($1, "VAR", $3->symbolData->type);
-    					$$ = makeNode(s, NULL, $3); }
+    : T_ID OP_ASIGN E T_PUNTO_COMA {
+        Symbol sAux;
+        sAux.id = $1;
+        Symbol* s = findSymbol(&sAux); // Buscamos con el temporal
+        
+        if (s == NULL) yyerror("Error: Variable no declarada");
+        
+        Symbol* asig = makeSymbol("=", "OP", s->type);
+        $$ = makeNode(asig, makeLeaf(s), $3);
+    }
     | R {$$ = $1;}
     ;
 
@@ -133,7 +157,14 @@ E   : E OP_SUMA E           { $$ = makeNode(makeSymbol("+", "", ""), $1, $3); }
     | E OP_OR E             { $$ = makeNode(makeSymbol("||", "", ""), $1, $3); }
     | T_NUM                 { $$ = makeLeaf(makeSymbol($1, "CONST", "int")); }
     | T_BOOL                { $$ = makeLeaf(makeSymbol($1, "CONST", "bool")); }
-    | T_ID                  { $$ = makeLeaf(makeSymbol($1, "VAR", "")); }
+    | T_ID                  { 
+        Symbol sAux;
+        sAux.id = $1;
+        Symbol* s = findSymbol(&sAux); 
+        
+        if (s == NULL) yyerror("Error: Variable no declarada");
+        $$ = makeLeaf(s);
+    }
     ;
 
 %%
