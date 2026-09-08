@@ -1,6 +1,9 @@
 # Compiladores
 Proyecto Compiladores
 
+## Integrantes:
+Valentin Pastre Thuer, Francisco Gribaudo Re, Francisco Manuel Andreani
+
 - Para generar el scanner con flex
 `flex extended-language.lex`
 - Para generar la tabla de parsing
