@@ -49,6 +49,8 @@ SymbolTab* initializeSymbolTab();
 void addSymbolToTab(Symbol* symbol);
 Symbol* findSymbol(Symbol* symbol);
 
+//int evaluate(ASTNode* node);
+
 /* Funci�n para imprimir en formato DOT */
 void printDOTEdges(ASTNode* node);
 void printDOT(ASTNode* root);
@@ -76,8 +78,7 @@ S   : T_TYPE T_ID T_PAR_IZQ T_PAR_DER T_LLAVE_IZQ P T_LLAVE_DER {
 	$$ = makeNode(s, $6, NULL);
         printDOT($$);
 
-        printf("\n Inicio de Ejecucion \n");
-        evaluate($$);
+    //    evaluate($$);
     }
     ;
 
@@ -265,3 +266,63 @@ void printDOT(ASTNode* root) {
     printDOTEdges(root);
     printf("}\n");
 }
+
+/*int evaluate(ASTNode* node) {
+    if (!node) return 0;
+    
+    // Nodos estructurales (recorremos a los hijos)
+    if (strcmp(node->symbolData->id, "Body") == 0 || 
+        strcmp(node->symbolData->id, "Statement") == 0 ||
+        strcmp(node->symbolData->symbolType, "FUNC") == 0 ||
+        strcmp(node->symbolData->symbolType, "VAR") == 0) {
+        evaluate(node->left);
+        evaluate(node->right);
+        return 0;
+    }
+    
+    // Nodos Constantes (retornan su valor)
+    if (strcmp(node->symbolData->symbolType, "CONST") == 0) {
+        if (strcmp(node->symbolData->type, "int") == 0)
+            return atoi(node->symbolData->id);
+        else if (strcmp(node->symbolData->type, "bool") == 0)
+            return (strcmp(node->symbolData->id, "true") == 0) ? 1 : 0;
+    }
+    
+    // Nodos de Variable (acceden al valor guardado en el símbolo de la tabla)
+    if (strcmp(node->symbolData->symbolType, "VAR") == 0) {
+        if (!node->symbolData->hasValue) {
+            fprintf(stderr, "\nError de Ejecucion: Variable '%s' sin inicializar.\n", node->symbolData->id);
+            exit(1);
+        }
+        return node->symbolData->value.intVal;
+    }
+    
+    // Nodos de Asignación (=) -> Actualizan la variable apuntada
+    if (strcmp(node->symbolData->id, "=") == 0) {
+        int val = evaluate(node->right); 
+        node->left->symbolData->value.intVal = val;
+        node->left->symbolData->hasValue = 1;
+        return val;
+    }
+    
+    // Nodos de Operaciones Matemáticas / Lógicas
+    if (strcmp(node->symbolData->id, "+") == 0)
+        return evaluate(node->left) + evaluate(node->right);
+    if (strcmp(node->symbolData->id, "-") == 0)
+        return evaluate(node->left) - evaluate(node->right);
+    if (strcmp(node->symbolData->id, "*") == 0)
+        return evaluate(node->left) * evaluate(node->right);
+    if (strcmp(node->symbolData->id, "&&") == 0)
+        return evaluate(node->left) && evaluate(node->right);
+    if (strcmp(node->symbolData->id, "||") == 0)
+        return evaluate(node->left) || evaluate(node->right);
+        
+    // Nodo de Retorno (RETURN)
+    if (strcmp(node->symbolData->symbolType, "RET") == 0) {
+        int retVal = evaluate(node->right);
+        printf(">>> Programa retorna el valor: %d\n", retVal);
+        return retVal;
+    }
+
+    return 0;
+} */    
