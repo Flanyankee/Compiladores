@@ -26,11 +26,28 @@ typedef struct ASTNode {
     struct ASTNode* right;
 } ASTNode;
 
+typedef struct SymbolTabElem {
+	Symbol* symbol;
+	struct SymbolTabElem* next;
+	struct SymbolTabElem* back;
+} SymbolTabElem;
+
+typedef struct SymbolTab {
+	struct SymbolTabElem* first;
+	struct SymbolTabElem* last;
+} SymbolTab;
+
 int nodeCount = 0;
 
 Symbol* makeSymbol(char* id, char* symType, char* dType);
 ASTNode* makeNode(Symbol* symbol, ASTNode* left, ASTNode* right);
 ASTNode* makeLeaf(Symbol* symbol);
+
+SymbolTab* tab;
+
+SymbolTab* initializeSymbolTab();
+void addSymbolToTab(Symbol* symbol);
+Symbol* findSymbol(Symbol* symbol);
 
 /* Funci�n para imprimir en formato DOT */
 void printDOTEdges(ASTNode* node);
@@ -56,8 +73,6 @@ void printDOT(ASTNode* root);
 
 S   : T_TYPE T_ID T_PAR_IZQ T_PAR_DER T_LLAVE_IZQ P T_LLAVE_DER {
 	Symbol* s = makeSymbol($2, "FUNC", $1);
-        /* ASTNode* root = makeNode(s, makeLeaf($1), makeLeaf($2));
-        $$ = makeNode("Program", root, $6); */
 	$$ = makeNode(s, $6, NULL);
         printDOT($$);
     }
@@ -95,8 +110,6 @@ E_triple
     }
     | T_TYPE T_ID OP_ASIGN E T_PUNTO_COMA E_triple { 
 	Symbol* s = makeSymbol($2, "VAR", $1);
-	s->value = $4->symbolData->value;
-	s->hasValue = 1;
 	$$ = makeNode(s, NULL, $6);
     }
     | /* Producci�n vac�a */ { $$ = NULL; }
@@ -104,8 +117,6 @@ E_triple
 
 E_doble 
     : T_ID OP_ASIGN E T_PUNTO_COMA {	Symbol* s = makeSymbol($1, "VAR", $3->symbolData->type);
-    					s->value = $3->symbolData->value;
-    					s->hasValue = $3->symbolData->hasValue;
     					$$ = makeNode(s, NULL, $3); }
     | R {$$ = $1;}
     ;
@@ -115,23 +126,11 @@ E_prima
     | /* Producci�n vac�a */ { $$ = NULL; }
     ;
 
-E   : E OP_SUMA E           { Symbol* s = makeSymbol("+", "", $1->symbolData->type);
-    				s->value.intVal = $1->symbolData->value.intVal + $3->symbolData->value.intVal;
-				s->hasValue = 1;
-    				$$ = makeNode(s, $1, $3); }
-    | E OP_MULT E           { Symbol* s = makeSymbol("*", "", $1->symbolData->type);
-    				s->value.intVal = $1->symbolData->value.intVal * $3->symbolData->value.intVal;
-				s->hasValue = 1;
-    				$$ = makeNode(s, $1, $3); }
+E   : E OP_SUMA E           { $$ = makeNode(makeSymbol("+", "", ""), $1, $3); }
+    | E OP_MULT E           { $$ = makeNode(makeSymbol("*", "", ""), $1, $3); }
     | T_PAR_IZQ E T_PAR_DER { $$ = $2; }
-    | E OP_AND E            { Symbol* s = makeSymbol("&&", "", $1->symbolData->type);
-    				s->value.boolVal = $1->symbolData->value.boolVal && $3->symbolData->value.boolVal;
-				s->hasValue = 1;
-    				$$ = makeNode(s, $1, $3); }
-    | E OP_OR E             { Symbol* s = makeSymbol("||", "", $1->symbolData->type);
-    				s->value.boolVal = $1->symbolData->value.boolVal || $3->symbolData->value.boolVal;
-				s->hasValue = 1;
-    				$$ = makeNode(s, $1, $3); }
+    | E OP_AND E            { $$ = makeNode(makeSymbol("&&", "", ""), $1, $3); }
+    | E OP_OR E             { $$ = makeNode(makeSymbol("||", "", ""), $1, $3); }
     | T_NUM                 { $$ = makeLeaf(makeSymbol($1, "CONST", "int")); }
     | T_BOOL                { $$ = makeLeaf(makeSymbol($1, "CONST", "bool")); }
     | T_ID                  { $$ = makeLeaf(makeSymbol($1, "VAR", "")); }
@@ -145,6 +144,7 @@ void yyerror(const char *s) {
 }
 
 int main() {
+    tab = initializeSymbolTab();
     yyparse();
     return 0;
 }
@@ -154,9 +154,37 @@ Symbol* makeSymbol(char* id, char* symType, char* dType) {
     symbol->symbolType = symType;
     symbol->id = strdup(id);
     symbol->type = dType;
-    // symbol->value.intVal = 0;
     symbol->hasValue = 0;
     return symbol;
+}
+
+SymbolTab* initializeSymbolTab() {
+	SymbolTab* tab = (SymbolTab*)malloc(sizeof(SymbolTab));
+	tab->first = (SymbolTabElem*)malloc(sizeof(SymbolTabElem));
+	tab->last = (SymbolTabElem*)malloc(sizeof(SymbolTabElem));
+	(tab->first)->next = tab->last;
+	(tab->first)->back = NULL;
+	(tab->last)->back = tab->first;
+	(tab->last)->next = NULL;
+	return tab;
+}
+void addSymbolToTab(Symbol* symbol) {
+	SymbolTabElem* elem = (SymbolTabElem*)malloc(sizeof(SymbolTabElem));
+	elem->symbol = symbol;
+	elem->back = (tab->last)->back;
+	elem->next = tab->last;
+	(elem->back)->next = elem;
+	(tab->last)->back = elem;
+}
+Symbol* findSymbol(Symbol* symbol) {
+	SymbolTabElem* aux = tab->first->next;
+	while (aux->next != NULL) {
+		if (strcmp(aux->symbol->id, symbol->id) == 0) {
+			return aux->symbol;
+		}
+		aux = aux->next;
+	}
+	return NULL;
 }
 
 ASTNode* makeNode(Symbol* symbol, ASTNode* left, ASTNode* right) {
