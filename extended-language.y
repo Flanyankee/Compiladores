@@ -7,67 +7,37 @@ extern int yylex();
 void yyerror(const char *s);
 
 typedef struct Symbol {
-    int symbolType; // si es variable, funcion, etc.
+    char* symbolType; // si es variable, funcion, etc.
     char* id;
     char* type;     // si es int, bool o void.
-    char* value;
+
+    union {
+    	int intVal;
+	int boolVal;
+    } value;
+
+    int hasValue;
 } Symbol;
 
 typedef struct ASTNode {
-    int internal_id;
-    struct Symbol* symbolData;
+    int internalId;
+    Symbol* symbolData;
     struct ASTNode* left;
     struct ASTNode* right;
 } ASTNode;
 
-int node_count = 0;
+int nodeCount = 0;
 
-Symbol* makeSymbol(char* id) {
-    Symbol* symbol = (Symbol*)malloc(sizeof(Symbol));
-    symbol->symbolType = 0;
-    symbol->id = strdup(id);
-    symbol->type = NULL;
-    symbol->value = NULL;
-    return symbol;
-}
+Symbol* makeSymbol(char* id, char* symType, char* dType);
+ASTNode* makeNode(Symbol* symbol, ASTNode* left, ASTNode* right);
+ASTNode* makeLeaf(Symbol* symbol);
 
-ASTNode* makeNode(char* id, ASTNode* left, ASTNode* right) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
-    node->internal_id = node_count++;
-    node->symbolData = makeSymbol(id);
-    node->left = left;
-    node->right = right;
-    return node;
-}
-
-ASTNode* makeLeaf(char* id) {
-    return makeNode(id, NULL, NULL);
-}
-
-/* Función para imprimir en formato DOT */
-void printDOT_Edges(ASTNode* node) {
-    if (!node) return;
-    
-    printf("  node%d [label=\"%s\"];\n", node->internal_id, node->symbolData->id);
-    
-    if (node->left) {
-        printf("  node%d -> node%d;\n", node->internal_id, node->left->internal_id);
-        printDOT_Edges(node->left);
-    }
-    if (node->right) {
-        printf("  node%d -> node%d;\n", node->internal_id, node->right->internal_id);
-        printDOT_Edges(node->right);
-    }
-}
-
-void printDOT(ASTNode* root) {
-    printf("digraph AST {\n");
-    printDOT_Edges(root);
-    printf("}\n");
-}
+/* Funci�n para imprimir en formato DOT */
+void printDOTEdges(ASTNode* node);
+void printDOT(ASTNode* root);
 %}
 
-/* Tipos semánticos */
+/* Tipos sem�nticos */
 %union {
     char* str;
     struct ASTNode* node;
@@ -85,56 +55,86 @@ void printDOT(ASTNode* root) {
 %%
 
 S   : T_TYPE T_ID T_PAR_IZQ T_PAR_DER T_LLAVE_IZQ P T_LLAVE_DER {
-        ASTNode* root = makeNode($2, makeLeaf($1), makeLeaf($2));
-        $$ = makeNode("Function", root, $6);
+	Symbol* s = makeSymbol($2, "FUNC", $1);
+        /* ASTNode* root = makeNode(s, makeLeaf($1), makeLeaf($2));
+        $$ = makeNode("Program", root, $6); */
+	$$ = makeNode(s, $6, NULL);
         printDOT($$);
     }
     ;
 
 P   : E_triple E_prima { 
-        $$ = makeNode("Body", $1, $2); 
+        $$ = makeNode(makeSymbol("Body", "", ""), $1, $2); 
     }
     ;
 
 R   : T_RETURN T_PUNTO_COMA { 
-        $$ = makeNode("Return", makeLeaf($1), NULL); 
+    /* Lo hago para que el nodo tenga el simbolo return y nada mas.
+    	Porque antes tenias el nodo con label "Return" y como hoja
+	tenias el nodo correspondiente al return.
+    */
+    	Symbol* s = makeSymbol($1, "", "");
+        $$ = makeLeaf(s); 
     }
     | T_RETURN E T_PUNTO_COMA { 
-        $$ = makeNode("Return", makeLeaf($1), $2); 
+    /* 
+    	Hago lo mismo pero asignandole el tipo al return
+	de la expresion que devuelve.
+    */
+	Symbol* s = makeSymbol($1, "", $2->symbolData->type);
+	s->value = $2->symbolData->value;
+	s->hasValue = $2->symbolData->hasValue;
+        $$ = makeNode(s, NULL, $2); 
     }
     ;
 
 E_triple 
     : T_TYPE T_ID T_PUNTO_COMA E_triple { 
-        ASTNode* declaration = makeNode("Declaration", makeLeaf($1), makeLeaf($2));
-        $$ = makeNode("Declaration List", declaration, $4); 
+	Symbol* s = makeSymbol($2, "VAR", $1);
+        $$ = makeNode(s, NULL, $4); 
     }
     | T_TYPE T_ID OP_ASIGN E T_PUNTO_COMA E_triple { 
-        ASTNode* declarationWAssign = makeNode("Declaration With Assign", makeLeaf($1), makeLeaf($2));
-        ASTNode* expressionToAssign = makeNode("Expression to assign", declarationWAssign, $4);
-        $$ = makeNode("Declaration List", expressionToAssign, $6);
+	Symbol* s = makeSymbol($2, "VAR", $1);
+	s->value = $4->symbolData->value;
+	s->hasValue = 1;
+	$$ = makeNode(s, NULL, $6);
     }
-    | /* Producción vacía */ { $$ = NULL; }
+    | /* Producci�n vac�a */ { $$ = NULL; }
     ;
 
 E_doble 
-    : T_ID OP_ASIGN E T_PUNTO_COMA { $$ = makeNode("Assign", makeLeaf($1), $3); }
+    : T_ID OP_ASIGN E T_PUNTO_COMA {	Symbol* s = makeSymbol($1, "VAR", $3->symbolData->type);
+    					s->value = $3->symbolData->value;
+    					s->hasValue = $3->symbolData->hasValue;
+    					$$ = makeNode(s, NULL, $3); }
     | R {$$ = $1;}
     ;
 
 E_prima 
-    : E_doble E_prima { $$ = makeNode("Statement", $1, $2); }
-    | /* Producción vacía */ { $$ = NULL; }
+    : E_doble E_prima { $$ = makeNode(makeSymbol("Statement", "", ""), $1, $2); }
+    | /* Producci�n vac�a */ { $$ = NULL; }
     ;
 
-E   : E OP_SUMA E           { $$ = makeNode("+", $1, $3); }
-    | E OP_MULT E           { $$ = makeNode("*", $1, $3); }
+E   : E OP_SUMA E           { Symbol* s = makeSymbol("+", "", $1->symbolData->type);
+    				s->value.intVal = $1->symbolData->value.intVal + $3->symbolData->value.intVal;
+				s->hasValue = 1;
+    				$$ = makeNode(s, $1, $3); }
+    | E OP_MULT E           { Symbol* s = makeSymbol("*", "", $1->symbolData->type);
+    				s->value.intVal = $1->symbolData->value.intVal * $3->symbolData->value.intVal;
+				s->hasValue = 1;
+    				$$ = makeNode(s, $1, $3); }
     | T_PAR_IZQ E T_PAR_DER { $$ = $2; }
-    | E OP_AND E            { $$ = makeNode("&&", $1, $3); }
-    | E OP_OR E             { $$ = makeNode("||", $1, $3); }
-    | T_NUM                 { $$ = makeLeaf($1); }
-    | T_BOOL                { $$ = makeLeaf($1); }
-    | T_ID                  { $$ = makeLeaf($1); }
+    | E OP_AND E            { Symbol* s = makeSymbol("&&", "", $1->symbolData->type);
+    				s->value.boolVal = $1->symbolData->value.boolVal && $3->symbolData->value.boolVal;
+				s->hasValue = 1;
+    				$$ = makeNode(s, $1, $3); }
+    | E OP_OR E             { Symbol* s = makeSymbol("||", "", $1->symbolData->type);
+    				s->value.boolVal = $1->symbolData->value.boolVal || $3->symbolData->value.boolVal;
+				s->hasValue = 1;
+    				$$ = makeNode(s, $1, $3); }
+    | T_NUM                 { $$ = makeLeaf(makeSymbol($1, "CONST", "int")); }
+    | T_BOOL                { $$ = makeLeaf(makeSymbol($1, "CONST", "bool")); }
+    | T_ID                  { $$ = makeLeaf(makeSymbol($1, "VAR", "")); }
     ;
 
 %%
@@ -147,4 +147,62 @@ void yyerror(const char *s) {
 int main() {
     yyparse();
     return 0;
+}
+
+Symbol* makeSymbol(char* id, char* symType, char* dType) {
+    Symbol* symbol = (Symbol*)malloc(sizeof(Symbol));
+    symbol->symbolType = symType;
+    symbol->id = strdup(id);
+    symbol->type = dType;
+    // symbol->value.intVal = 0;
+    symbol->hasValue = 0;
+    return symbol;
+}
+
+ASTNode* makeNode(Symbol* symbol, ASTNode* left, ASTNode* right) {
+    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
+    node->internalId = nodeCount++;
+    node->symbolData = symbol;
+    node->left = left;
+    node->right = right;
+    return node;
+}
+
+ASTNode* makeLeaf(Symbol* symbol) {
+    return makeNode(symbol, NULL, NULL);
+}
+
+void printDOTEdges(ASTNode* node) {
+    if (!node) return;
+    
+    printf("  node%d [shape=box, label=\"ID: %s\\nSymType: %s\\nDataType: %s", 
+           node->internalId, 
+           node->symbolData->id, 
+           node->symbolData->symbolType, 
+           node->symbolData->type);
+    
+    if (node->symbolData->hasValue) {
+        if (strcmp(node->symbolData->type, "int") == 0) {
+            printf("\\nValue: %d", node->symbolData->value.intVal); 
+        } else if (strcmp(node->symbolData->type, "bool") == 0) {
+            printf("\\nValue: %s", node->symbolData->value.boolVal ? "true" : "false");
+        }
+    }
+    printf("\"];\n");    
+
+    if (node->left) {
+        printf("  node%d -> node%d;\n", node->internalId, node->left->internalId);
+        printDOTEdges(node->left);
+    }
+    if (node->right) {
+        printf("  node%d -> node%d;\n", node->internalId, node->right->internalId);
+        printDOTEdges(node->right);
+    }
+}
+
+void printDOT(ASTNode* root) {
+    printf("digraph AST {\n");
+    printf("  node [fontname=\"Arial\"];\n");
+    printDOTEdges(root);
+    printf("}\n");
 }
