@@ -52,8 +52,9 @@ Symbol* findSymbol(Symbol* symbol);
 int evaluate(ASTNode* node);
 
 /* Funci�n para imprimir en formato DOT */
-void printDOTEdges(ASTNode* node);
+void printDOTEdges(ASTNode* node, FILE* file);
 void printDOT(ASTNode* root);
+void printSymbolTab(SymbolTab* tab);
 %}
 
 /* Tipos sem�nticos */
@@ -76,9 +77,13 @@ void printDOT(ASTNode* root);
 S   : T_TYPE T_ID T_PAR_IZQ T_PAR_DER T_LLAVE_IZQ P T_LLAVE_DER {
 	Symbol* s = makeSymbol($2, "FUNC", $1);
 	$$ = makeNode(s, $6, NULL);
-        printDOT($$);
+	
+        if (findSymbol(s) != NULL) yyerror("Error: Variable ya declarada");
+        addSymbolToTab(s);
 
+        printDOT($$);
         evaluate($$);
+    	printSymbolTab(tab);
     }
     ;
 
@@ -94,42 +99,38 @@ R   : T_RETURN T_PUNTO_COMA {
     */
     	Symbol* s = makeSymbol($1, "RET", "void");
         $$ = makeLeaf(s); 
-    }
-    | T_RETURN E T_PUNTO_COMA { 
+    } | T_RETURN E T_PUNTO_COMA { 
     /* 
     	Hago lo mismo pero asignandole el tipo al return
 	de la expresion que devuelve.
     */
-	    Symbol* s = makeSymbol($1, "RET", $2->symbolData->type);
+	Symbol* s = makeSymbol($1, "RET", $2->symbolData->type);
         $$ = makeNode(s, NULL, $2); 
     }
     ;
 
 E_triple 
     : T_TYPE T_ID T_PUNTO_COMA E_triple { 
-        Symbol sAux;
-        sAux.id = $2;
-        if (findSymbol(&sAux) != NULL) yyerror("Error: Variable ya declarada");
-
         Symbol* s = makeSymbol($2, "VAR", $1);
+
+        if (findSymbol(s) != NULL) yyerror("Error: Variable ya declarada");
         addSymbolToTab(s);
-        $$ = makeNode(s, NULL, $4);
+
+        $$ = makeNode(makeSymbol("DECL", "", ""), NULL, $4);
         
     }
     | T_TYPE T_ID OP_ASIGN E T_PUNTO_COMA E_triple { 
-	Symbol sAux;
-        sAux.id = $2;
-        if (findSymbol(&sAux) != NULL) yyerror("Error: Variable ya declarada");
-
         Symbol* s = makeSymbol($2, "VAR", $1);
-        addSymbolToTab(s); 
-        
+
+        if (findSymbol(s) != NULL) yyerror("Error: Variable ya declarada");
+        addSymbolToTab(s);
+
         Symbol* asig = makeSymbol("=", "OP", $1);
         ASTNode* assignNode = makeNode(asig, makeLeaf(s), $4);
         
-        $$ = makeNode(s, assignNode, $6);
+        $$ = makeNode(makeSymbol("DECL", "", ""), assignNode, $6);
     }
-    | /* Produccin vaca */ { $$ = NULL; }
+    | /* Produccion vacia */ { $$ = NULL; }
     ;
 
 E_doble 
@@ -151,11 +152,11 @@ E_prima
     | /* Producci�n vac�a */ { $$ = NULL; }
     ;
 
-E   : E OP_SUMA E           { $$ = makeNode(makeSymbol("+", "", ""), $1, $3); }
-    | E OP_MULT E           { $$ = makeNode(makeSymbol("*", "", ""), $1, $3); }
+E   : E OP_SUMA E           { $$ = makeNode(makeSymbol("+", "", "int"), $1, $3); }
+    | E OP_MULT E           { $$ = makeNode(makeSymbol("*", "", "int"), $1, $3); }
     | T_PAR_IZQ E T_PAR_DER { $$ = $2; }
-    | E OP_AND E            { $$ = makeNode(makeSymbol("&&", "", ""), $1, $3); }
-    | E OP_OR E             { $$ = makeNode(makeSymbol("||", "", ""), $1, $3); }
+    | E OP_AND E            { $$ = makeNode(makeSymbol("&&", "", "bool"), $1, $3); }
+    | E OP_OR E             { $$ = makeNode(makeSymbol("||", "", "bool"), $1, $3); }
     | T_NUM                 { $$ = makeLeaf(makeSymbol($1, "CONST", "int")); }
     | T_BOOL                { $$ = makeLeaf(makeSymbol($1, "CONST", "bool")); }
     | T_ID                  { 
@@ -232,10 +233,10 @@ ASTNode* makeLeaf(Symbol* symbol) {
     return makeNode(symbol, NULL, NULL);
 }
 
-void printDOTEdges(ASTNode* node) {
+void printDOTEdges(ASTNode* node, FILE* file) {
     if (!node) return;
     
-    printf("  node%d [shape=box, label=\"ID: %s\\nSymType: %s\\nDataType: %s", 
+    fprintf(file, "  node%d [shape=box, label=\"ID: %s\\nSymType: %s\\nDataType: %s", 
            node->internalId, 
            node->symbolData->id, 
            node->symbolData->symbolType, 
@@ -243,86 +244,125 @@ void printDOTEdges(ASTNode* node) {
     
     if (node->symbolData->hasValue) {
         if (strcmp(node->symbolData->type, "int") == 0) {
-            printf("\\nValue: %d", node->symbolData->value.intVal); 
+            fprintf(file, "\\nValue: %d", node->symbolData->value.intVal); 
         } else if (strcmp(node->symbolData->type, "bool") == 0) {
-            printf("\\nValue: %s", node->symbolData->value.boolVal ? "true" : "false");
+            fprintf(file, "\\nValue: %s", node->symbolData->value.boolVal ? "true" : "false");
         }
     }
-    printf("\"];\n");    
+    fprintf(file, "\"];\n");    
 
     if (node->left) {
-        printf("  node%d -> node%d;\n", node->internalId, node->left->internalId);
-        printDOTEdges(node->left);
+        fprintf(file, "  node%d -> node%d;\n", node->internalId, node->left->internalId);
+        printDOTEdges(node->left, file);
     }
     if (node->right) {
-        printf("  node%d -> node%d;\n", node->internalId, node->right->internalId);
-        printDOTEdges(node->right);
+        fprintf(file, "  node%d -> node%d;\n", node->internalId, node->right->internalId);
+        printDOTEdges(node->right, file);
     }
 }
 
 void printDOT(ASTNode* root) {
-    printf("digraph AST {\n");
-    printf("  node [fontname=\"Arial\"];\n");
-    printDOTEdges(root);
-    printf("}\n");
+    FILE* outputFile = fopen("syntax-tree.dot", "w");
+    if (outputFile == NULL) {
+        fprintf(stderr, "Error: No se pudo crear el archivo arbol_sintactico.txt\n");
+        return;
+    }
+
+    fprintf(outputFile, "digraph AST {\n");
+    fprintf(outputFile, "  node [fontname=\"Arial\"];\n");
+    printDOTEdges(root, outputFile);
+    fprintf(outputFile, "}\n");
+    fclose(outputFile);
 }
 
 int evaluate(ASTNode* node) {
     if (!node) return 0;
     
+    Symbol* symbol = node->symbolData;
+
     // Nodos estructurales (recorremos a los hijos)
-    if (strcmp(node->symbolData->id, "Body") == 0 || 
-        strcmp(node->symbolData->id, "Statement") == 0 ||
-        strcmp(node->symbolData->symbolType, "FUNC") == 0 ||
-        strcmp(node->symbolData->symbolType, "VAR") == 0) {
+    if (strcmp(symbol->id, "Body") == 0 || 
+        strcmp(symbol->id, "Statement") == 0 ||
+        strcmp(symbol->symbolType, "FUNC") == 0 ||
+        strcmp(symbol->symbolType, "DECL") == 0) {
         evaluate(node->left);
         evaluate(node->right);
         return 0;
     }
     
     // Nodos Constantes (retornan su valor)
-    if (strcmp(node->symbolData->symbolType, "CONST") == 0) {
-        if (strcmp(node->symbolData->type, "int") == 0)
-            return atoi(node->symbolData->id);
-        else if (strcmp(node->symbolData->type, "bool") == 0)
-            return (strcmp(node->symbolData->id, "true") == 0) ? 1 : 0;
+    if (strcmp(symbol->symbolType, "CONST") == 0) {
+        if (strcmp(symbol->type, "int") == 0)
+            return atoi(symbol->id);
+        else if (strcmp(symbol->type, "bool") == 0)
+            return (strcmp(symbol->id, "true") == 0) ? 1 : 0;
     }
     
     // Nodos de Variable (acceden al valor guardado en el símbolo de la tabla)
-    if (strcmp(node->symbolData->symbolType, "VAR") == 0) {
-        if (!node->symbolData->hasValue) {
-            fprintf(stderr, "\nError de Ejecucion: Variable '%s' sin inicializar.\n", node->symbolData->id);
+    if (strcmp(symbol->symbolType, "VAR") == 0) {
+        if (!symbol->hasValue) {
+            fprintf(stderr, "\nError de Ejecucion: Variable '%s' sin inicializar.\n", symbol->id);
             exit(1);
         }
-        return node->symbolData->value.intVal;
+        return symbol->value.intVal;
     }
     
     // Nodos de Asignación (=) -> Actualizan la variable apuntada
-    if (strcmp(node->symbolData->id, "=") == 0) {
+    if (strcmp(symbol->id, "=") == 0) {
         int val = evaluate(node->right); 
-        node->left->symbolData->value.intVal = val;
-        node->left->symbolData->hasValue = 1;
+        (node->left)->symbolData->value.intVal = val;
+        (node->left)->symbolData->hasValue = 1;
         return val;
     }
-    
-    // Nodos de Operaciones Matemáticas / Lógicas
-    if (strcmp(node->symbolData->id, "+") == 0)
-        return evaluate(node->left) + evaluate(node->right);
-    if (strcmp(node->symbolData->id, "-") == 0)
-        return evaluate(node->left) - evaluate(node->right);
-    if (strcmp(node->symbolData->id, "*") == 0)
-        return evaluate(node->left) * evaluate(node->right);
-    if (strcmp(node->symbolData->id, "&&") == 0)
-        return evaluate(node->left) && evaluate(node->right);
-    if (strcmp(node->symbolData->id, "||") == 0)
-        return evaluate(node->left) || evaluate(node->right);
-        
+
     // Nodo de Retorno (RETURN)
-    if (strcmp(node->symbolData->symbolType, "RET") == 0) {
+    if (strcmp(symbol->symbolType, "RET") == 0) {
         int retVal = evaluate(node->right);
-        printf(">>> Programa retorna el valor: %d\n", retVal);
         return retVal;
     }
 
+    
+    // Nodos de Operaciones Matemáticas / Lógicas
+    if (node->left != NULL && node->right != NULL) {
+    	if (strcmp(symbol->type, node->left->symbolData->type) != 0
+    		|| strcmp(symbol->type, node->right->symbolData->type) != 0) {
+			fprintf(stderr, "\nError de tipos\n", symbol->id);
+	} else {
+    		if (strcmp(symbol->id, "+") == 0)
+    		    return evaluate(node->left) + evaluate(node->right);
+    		if (strcmp(symbol->id, "*") == 0)
+    		    return evaluate(node->left) * evaluate(node->right);
+    		if (strcmp(symbol->id, "&&") == 0)
+    		    return evaluate(node->left) && evaluate(node->right);
+    		if (strcmp(symbol->id, "||") == 0)
+    		    return evaluate(node->left) || evaluate(node->right);
+    	}
+    }
+        
     return 0;
 }    
+
+void printSymbolTab(SymbolTab* tab) {
+	FILE* outputFile = fopen("symbols-tab.txt", "w");
+	if (outputFile == NULL) {
+		fprintf(stderr, "Error: No se pudo crear el archivo arbol_sintactico.txt\n");
+		return;
+	}
+
+	SymbolTabElem* aux = (tab->first)->next;
+	while (aux->next != NULL) {
+		Symbol* auxSymbol = aux->symbol;
+
+		if (auxSymbol->hasValue == 1) {
+			fprintf(outputFile, "SymType: %s, ID: %s, Type: %s, Value: %d", auxSymbol->symbolType, auxSymbol->id, auxSymbol->type, auxSymbol->value.intVal);
+		} else {
+			fprintf(outputFile, "SymType: %s, ID: %s, Type: %s", auxSymbol->symbolType, auxSymbol->id, auxSymbol->type);
+		}
+		fprintf(outputFile, "\t=>\t");
+
+		aux = aux->next;
+	}
+	fprintf(outputFile, "\n");
+
+	fclose(outputFile);
+}
