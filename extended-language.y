@@ -38,6 +38,7 @@ typedef struct SymbolTab {
 } SymbolTab;
 
 int nodeCount = 0;
+ASTNode* tree;
 
 Symbol* makeSymbol(char* id, char* symType, char* dType);
 ASTNode* makeNode(Symbol* symbol, ASTNode* left, ASTNode* right);
@@ -76,14 +77,12 @@ void printSymbolTab(SymbolTab* tab);
 
 S   : T_TYPE T_ID T_PAR_IZQ T_PAR_DER T_LLAVE_IZQ P T_LLAVE_DER {
 	Symbol* s = makeSymbol($2, "FUNC", $1);
-	$$ = makeNode(s, $6, NULL);
 	
         if (findSymbol(s) != NULL) yyerror("Error: Variable ya declarada");
         addSymbolToTab(s);
-
-        printDOT($$);
-        evaluate($$);
-    	printSymbolTab(tab);
+	$$ = makeNode(s, $6, NULL);
+	tree = $$;
+	
     }
     ;
 
@@ -179,6 +178,10 @@ void yyerror(const char *s) {
 int main() {
     tab = initializeSymbolTab();
     yyparse();
+
+    evaluate(tree);
+    printDOT(tree);
+    printSymbolTab(tab);
     return 0;
 }
 

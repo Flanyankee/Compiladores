@@ -7,7 +7,7 @@ Valentin Pastre Thuer, Francisco Gribaudo Re, Francisco Manuel Andreani
 - Para generar el scanner con flex
 `flex extended-language.lex`
 - Para generar la tabla de parsing
-`bison -vd extended-launguage.y`
+`bison -vd extended-language.y`
 - Para compilar el parser
 `gcc extended-language.tab.c lex.yy.c -lfl -o nombre-ejecutable`
 - Para graficar con dot
