@@ -92,7 +92,7 @@ R   : T_RETURN T_PUNTO_COMA {
     	Porque antes tenias el nodo con label "Return" y como hoja
 	tenias el nodo correspondiente al return.
     */
-    	Symbol* s = makeSymbol($1, "", "");
+    	Symbol* s = makeSymbol($1, "RET", "void");
         $$ = makeLeaf(s); 
     }
     | T_RETURN E T_PUNTO_COMA { 
@@ -267,19 +267,19 @@ void printDOT(ASTNode* root) {
     printf("}\n");
 }
 
-/*int evaluate(ASTNode* node) {
+int evaluate(ASTNode* node) {
     if (!node) return 0;
     
     // Nodos estructurales (recorremos a los hijos)
     if (strcmp(node->symbolData->id, "Body") == 0 || 
         strcmp(node->symbolData->id, "Statement") == 0 ||
-        strcmp(node->symbolData->symbolType, "FUNC") == 0 ||
-        strcmp(node->symbolData->symbolType, "VAR") == 0) {
+        strcmp(node->symbolData->symbolType, "FUNC") == 0) {
         evaluate(node->left);
         evaluate(node->right);
         return 0;
     }
-    
+
+ 
     // Nodos Constantes (retornan su valor)
     if (strcmp(node->symbolData->symbolType, "CONST") == 0) {
         if (strcmp(node->symbolData->type, "int") == 0)
@@ -297,13 +297,21 @@ void printDOT(ASTNode* root) {
         return node->symbolData->value.intVal;
     }
     
-    // Nodos de Asignación (=) -> Actualizan la variable apuntada
-    if (strcmp(node->symbolData->id, "=") == 0) {
-        int val = evaluate(node->right); 
-        node->left->symbolData->value.intVal = val;
-        node->left->symbolData->hasValue = 1;
-        return val;
+    if (strcmp(node->symbolData->symbolType, "VAR") == 0) {
+        if (node->left != NULL || node->right != NULL) {
+            evaluate(node->left);  
+            evaluate(node->right); 
+            return 0;
+        } 
+        else {
+            if (!node->symbolData->hasValue) {
+                fprintf(stderr, "\nError de Ejecucion: Variable '%s' sin inicializar.\n", node->symbolData->id);
+                exit(1);
+            }
+            return node->symbolData->value.intVal;
+        }
     }
+    
     
     // Nodos de Operaciones Matemáticas / Lógicas
     if (strcmp(node->symbolData->id, "+") == 0)
@@ -325,4 +333,4 @@ void printDOT(ASTNode* root) {
     }
 
     return 0;
-} */    
+}    
