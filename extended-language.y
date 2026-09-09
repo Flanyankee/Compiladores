@@ -49,7 +49,7 @@ SymbolTab* initializeSymbolTab();
 void addSymbolToTab(Symbol* symbol);
 Symbol* findSymbol(Symbol* symbol);
 
-//int evaluate(ASTNode* node);
+int evaluate(ASTNode* node);
 
 /* Funci�n para imprimir en formato DOT */
 void printDOTEdges(ASTNode* node);
@@ -78,7 +78,7 @@ S   : T_TYPE T_ID T_PAR_IZQ T_PAR_DER T_LLAVE_IZQ P T_LLAVE_DER {
 	$$ = makeNode(s, $6, NULL);
         printDOT($$);
 
-    //    evaluate($$);
+        evaluate($$);
     }
     ;
 
@@ -273,13 +273,13 @@ int evaluate(ASTNode* node) {
     // Nodos estructurales (recorremos a los hijos)
     if (strcmp(node->symbolData->id, "Body") == 0 || 
         strcmp(node->symbolData->id, "Statement") == 0 ||
-        strcmp(node->symbolData->symbolType, "FUNC") == 0) {
+        strcmp(node->symbolData->symbolType, "FUNC") == 0 ||
+        strcmp(node->symbolData->symbolType, "VAR") == 0) {
         evaluate(node->left);
         evaluate(node->right);
         return 0;
     }
-
- 
+    
     // Nodos Constantes (retornan su valor)
     if (strcmp(node->symbolData->symbolType, "CONST") == 0) {
         if (strcmp(node->symbolData->type, "int") == 0)
@@ -297,21 +297,13 @@ int evaluate(ASTNode* node) {
         return node->symbolData->value.intVal;
     }
     
-    if (strcmp(node->symbolData->symbolType, "VAR") == 0) {
-        if (node->left != NULL || node->right != NULL) {
-            evaluate(node->left);  
-            evaluate(node->right); 
-            return 0;
-        } 
-        else {
-            if (!node->symbolData->hasValue) {
-                fprintf(stderr, "\nError de Ejecucion: Variable '%s' sin inicializar.\n", node->symbolData->id);
-                exit(1);
-            }
-            return node->symbolData->value.intVal;
-        }
+    // Nodos de Asignación (=) -> Actualizan la variable apuntada
+    if (strcmp(node->symbolData->id, "=") == 0) {
+        int val = evaluate(node->right); 
+        node->left->symbolData->value.intVal = val;
+        node->left->symbolData->hasValue = 1;
+        return val;
     }
-    
     
     // Nodos de Operaciones Matemáticas / Lógicas
     if (strcmp(node->symbolData->id, "+") == 0)
