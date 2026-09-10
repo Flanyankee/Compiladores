@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-void printDOTEdges(ASTNode* node, FILE* file) {
+void printDOTEdges(ASTNode* node, FILE* outputFile) {
     if (!node) return;
     
-    fprintf(file, "  node%d [shape=box, label=\"ID: %s\\nSymType: %s\\nDataType: %s", 
+    fprintf(outputFile, "  node%d [shape=box, label=\"ID: %s\\nSymType: %s\\nDataType: %s", 
            node->internalId, 
            node->symbolData->id, 
            node->symbolData->symbolType, 
@@ -13,20 +13,20 @@ void printDOTEdges(ASTNode* node, FILE* file) {
     
     if (node->symbolData->hasValue) {
         if (strcmp(node->symbolData->type, "int") == 0) {
-            fprintf(file, "\\nValue: %d", node->symbolData->value.intVal); 
+            fprintf(outputFile, "\\nValue: %d", node->symbolData->value.intVal); 
         } else if (strcmp(node->symbolData->type, "bool") == 0) {
-            fprintf(file, "\\nValue: %s", node->symbolData->value.boolVal ? "true" : "false");
+            fprintf(outputFile, "\\nValue: %s", node->symbolData->value.boolVal ? "true" : "false");
         }
     }
-    fprintf(file, "\"];\n");    
+    fprintf(outputFile, "\"];\n");    
 
     if (node->left) {
-        fprintf(file, "  node%d -> node%d;\n", node->internalId, node->left->internalId);
-        printDOTEdges(node->left, file);
+        fprintf(outputFile, "  node%d -> node%d;\n", node->internalId, node->left->internalId);
+        printDOTEdges(node->left, outputFile);
     }
     if (node->right) {
-        fprintf(file, "  node%d -> node%d;\n", node->internalId, node->right->internalId);
-        printDOTEdges(node->right, file);
+        fprintf(outputFile, "  node%d -> node%d;\n", node->internalId, node->right->internalId);
+        printDOTEdges(node->right, outputFile);
     }
 }
 
@@ -44,28 +44,23 @@ void printDOT(ASTNode* root) {
     fclose(outputFile);
 }
 
-void generateAssembly(ASTNode* node) {
+void generateAssembly(ASTNode* node, FILE* outputFile) {
     if (!node) return;
     
-    FILE* outputFile = fopen("pseudo-assembly.txt", "w");
-	if (outputFile == NULL) {
-	    fprintf(stderr, "Error: No se pudo crear el archivo pseudo-assembly.txt\n");
-		return;
-	}
 
     Symbol* symbol = node->symbolData;
 
     if (strcmp(symbol->id, "Body") == 0 || 
         strcmp(symbol->id, "Statement") == 0) {
-        generateAssembly(node->left);
-        generateAssembly(node->right);
+        generateAssembly(node->left, outputFile);
+        generateAssembly(node->right, outputFile);
         return;
     }
 
     if (strcmp(symbol->symbolType, "FUNC") == 0) {
-        printf(".globl %s\n", symbol->id);
-        printf("%s:\n", symbol->id);
-        generateAssembly(node->left);
+        fprintf(outputFile, ".globl %s\n", symbol->id);
+        fprintf(outputFile, "%s:\n", symbol->id);
+        generateAssembly(node->left, outputFile);
         return;
     }
 
@@ -75,23 +70,23 @@ void generateAssembly(ASTNode* node) {
             val = atoi(symbol->id);
         else if (strcmp(symbol->type, "bool") == 0)
             val = (strcmp(symbol->id, "true") == 0) ? 1 : 0;  
-        printf("  movq $%d, %%rax\n", val);
+        fprintf(outputFile, "  movq $%d, %%rax\n", val);
         return;
     }
 
     if (strcmp(symbol->symbolType, "VAR") == 0) {
         if (node->left == NULL && node->right == NULL) { // Solo si es hoja
-            printf("  movq (%%rbp), %%rax\n");
+            fprintf(outputFile, "  movq (%%rbp), %%rax\n");
         }
         return;
     }
     
     if (strcmp(symbol->id, "=") == 0) {
-        generateAssembly(node->right); 
+        generateAssembly(node->right, outputFile); 
         
         ASTNode* varNode = node->left; // El hijo izquierdo es la variable
         // Movemos el resultado de %rax a la ubicación de memoria de la variable
-        printf("  movq %%rax, (%%rbp)\n");
+        fprintf(outputFile, "  movq %%rax, (%%rbp)\n");
         return;
     }
     
@@ -101,33 +96,33 @@ void generateAssembly(ASTNode* node) {
         strcmp(symbol->id, "&&") == 0 ||
         strcmp(symbol->id, "||") == 0) {
         
-        generateAssembly(node->left);    
-        printf("  pushq %%rax\n");      
+        generateAssembly(node->left, outputFile);    
+        fprintf(outputFile, "  pushq %%rax\n");      
         
-        generateAssembly(node->right);   
-        printf("  movq %%rax, %%r10\n"); //Movemos la derecha al registro temporal %r10
-        printf("  popq %%rax\n");        //Recuperamos la izquierda en %rax
+        generateAssembly(node->right, outputFile);   
+        fprintf(outputFile, "  movq %%rax, %%r10\n"); //Movemos la derecha al registro temporal %r10
+        fprintf(outputFile, "  popq %%rax\n");        //Recuperamos la izquierda en %rax
         
         if (strcmp(symbol->id, "+") == 0) {
-            printf("  addq %%r10, %%rax\n");
+            fprintf(outputFile, "  addq %%r10, %%rax\n");
         } else if (strcmp(symbol->id, "-") == 0) {
-            printf("  subq %%r10, %%rax\n");
+            fprintf(outputFile, "  subq %%r10, %%rax\n");
         } else if (strcmp(symbol->id, "*") == 0) {
-            printf("  imulq %%r10, %%rax\n"); 
+            fprintf(outputFile, "  imulq %%r10, %%rax\n"); 
         } else if (strcmp(symbol->id, "&&") == 0) {
-            printf("  andq %%r10, %%rax\n");
+            fprintf(outputFile, "  andq %%r10, %%rax\n");
         } else if (strcmp(symbol->id, "||") == 0) {
-            printf("  orq %%r10, %%rax\n");
+            fprintf(outputFile, "  orq %%r10, %%rax\n");
         }
         return;
     }
     
     if (strcmp(symbol->symbolType, "RET") == 0) {
         if (node->right) {
-            generateAssembly(node->right); 
+            generateAssembly(node->right, outputFile); 
         }
-        printf("  leave\n");
-        printf("  ret\n");
+        fprintf(outputFile, "  leave\n");
+        fprintf(outputFile, "  ret\n");
         return;
     }
 }

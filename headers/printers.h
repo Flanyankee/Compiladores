@@ -5,9 +5,9 @@
 #include "syntax-tree.h"
 #include <stdio.h>
 
-void printDOTEdges(ASTNode *node, FILE *file);
+void printDOTEdges(ASTNode *node, FILE *outputFile);
 void printDOT(ASTNode *root);
-void generateAssembly(ASTNode *node);
+void generateAssembly(ASTNode *node, FILE *outputFile);
 void printSymbolTab(SymbolTab *tab);
 
 #endif

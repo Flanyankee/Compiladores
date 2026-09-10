@@ -136,9 +136,17 @@ int main() {
     yyparse();
 
     evaluate(tree);
-    generateAssembly(tree);
     printDOT(tree);
     printSymbolTab(tab);
+
+
+    FILE* assemblyFile = fopen("pseudo-assembly.txt", "w");
+	if (assemblyFile == NULL) {
+	    fprintf(stderr, "Error: No se pudo crear el archivo pseudo-assembly.txt\n");
+		exit(1);
+	}
+    generateAssembly(tree, assemblyFile);
+    fclose(assemblyFile);
     return 0;
 }
 
