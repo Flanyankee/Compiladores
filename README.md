@@ -9,7 +9,7 @@ Valentin Pastre Thuer, Francisco Gribaudo Re, Francisco Manuel Andreani
 - Para generar la tabla de parsing
 `bison -vd extended-language.y`
 - Para compilar el parser
-`gcc extended-language.tab.c lex.yy.c -lfl -o nombre-ejecutable`
+`gcc -I./headers sources/* extended-language.tab.c lex.yy.c -lfl -o nombre-ejecutable`
 - Para graficar con dot
 `./nombre-ejecutable < text.txt` `dot -Tpng syntax-tree.dot -o nombre-imagen.png`
 - Se crea un archivo symbol-tab.txt con la tabla de simbolos.
