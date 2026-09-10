@@ -52,6 +52,8 @@ Symbol* findSymbol(Symbol* symbol);
 
 int evaluate(ASTNode* node);
 
+void generateAssembly(ASTNode* node);
+
 /* Funci�n para imprimir en formato DOT */
 void printDOTEdges(ASTNode* node, FILE* file);
 void printDOT(ASTNode* root);
@@ -180,6 +182,7 @@ int main() {
     yyparse();
 
     evaluate(tree);
+    generateAssembly(tree);
     printDOT(tree);
     printSymbolTab(tab);
     return 0;
@@ -343,7 +346,87 @@ int evaluate(ASTNode* node) {
     }
         
     return 0;
-}    
+}  
+
+void generateAssembly(ASTNode* node) {
+    if (!node) return;
+    
+    if (strcmp(node->symbolData->id, "Body") == 0 || 
+        strcmp(node->symbolData->id, "Statement") == 0) {
+        generateAssembly(node->left);
+        generateAssembly(node->right);
+        return;
+    }
+
+    if (strcmp(node->symbolData->symbolType, "FUNC") == 0) {
+        printf(".globl %s\n", node->symbolData->id);
+        printf("%s:\n", node->symbolData->id);
+        generateAssembly(node->left);
+        return;
+    }
+
+    if (strcmp(node->symbolData->symbolType, "CONST") == 0) {
+        int val = 0;
+        if (strcmp(node->symbolData->type, "int") == 0)
+            val = atoi(node->symbolData->id);
+        else if (strcmp(node->symbolData->type, "bool") == 0)
+            val = (strcmp(node->symbolData->id, "true") == 0) ? 1 : 0;  
+        printf("  movq $%d, %%rax\n", val);
+        return;
+    }
+
+    if (strcmp(node->symbolData->symbolType, "VAR") == 0) {
+        if (node->left == NULL && node->right == NULL) { // Solo si es hoja
+            printf("  movq (%%rbp), %%rax\n");
+        }
+        return;
+    }
+    
+    if (strcmp(node->symbolData->id, "=") == 0) {
+        generateAssembly(node->right); 
+        
+        ASTNode* varNode = node->left; // El hijo izquierdo es la variable
+        // Movemos el resultado de %rax a la ubicación de memoria de la variable
+        printf("  movq %%rax, (%%rbp)\n");
+        return;
+    }
+    
+    if (strcmp(node->symbolData->id, "+") == 0 ||
+        strcmp(node->symbolData->id, "-") == 0 ||
+        strcmp(node->symbolData->id, "*") == 0 ||
+        strcmp(node->symbolData->id, "&&") == 0 ||
+        strcmp(node->symbolData->id, "||") == 0) {
+        
+        generateAssembly(node->left);    
+        printf("  pushq %%rax\n");      
+        
+        generateAssembly(node->right);   
+        printf("  movq %%rax, %%r10\n"); //Movemos la derecha al registro temporal %r10
+        printf("  popq %%rax\n");        //Recuperamos la izquierda en %rax
+        
+        if (strcmp(node->symbolData->id, "+") == 0) {
+            printf("  addq %%r10, %%rax\n");
+        } else if (strcmp(node->symbolData->id, "-") == 0) {
+            printf("  subq %%r10, %%rax\n");
+        } else if (strcmp(node->symbolData->id, "*") == 0) {
+            printf("  imulq %%r10, %%rax\n"); 
+        } else if (strcmp(node->symbolData->id, "&&") == 0) {
+            printf("  andq %%r10, %%rax\n");
+        } else if (strcmp(node->symbolData->id, "||") == 0) {
+            printf("  orq %%r10, %%rax\n");
+        }
+        return;
+    }
+    
+    if (strcmp(node->symbolData->symbolType, "RET") == 0) {
+        if (node->right) {
+            generateAssembly(node->right); 
+        }
+        printf("  leave\n");
+        printf("  ret\n");
+        return;
+    }
+}
 
 void printSymbolTab(SymbolTab* tab) {
 	FILE* outputFile = fopen("symbols-tab.txt", "w");
