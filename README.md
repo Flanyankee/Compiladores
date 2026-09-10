@@ -11,8 +11,9 @@ Valentin Pastre Thuer, Francisco Gribaudo Re, Francisco Manuel Andreani
 - Para compilar el parser
 `gcc -I./headers sources/* extended-language.tab.c lex.yy.c -lfl -o nombre-ejecutable`
 - Para graficar con dot
-`./nombre-ejecutable < text.txt` `dot -Tpng syntax-tree.dot -o nombre-imagen.png`
-- Se crea un archivo symbol-tab.txt con la tabla de simbolos.
+`./nombre-ejecutable < test.txt` `dot -Tpng syntax-tree.dot -o nombre-imagen.png`
+- Se crea un archivo **symbols-tab.txt** con la tabla de simbolos.
+- Se crea un archivo **pseudo-assembly.txt** con la traduccion a pseudo-assembly.
 
 # Ejercicio 1, extención de gramática de expresiones
 ```
