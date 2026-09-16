@@ -40,6 +40,9 @@ RETURN "return"
 ")" {return RIGHT_PARENTHESIS;}
 "{" {return LEFT_BRACE;}
 "}" {return RIGHT_BRACE;}
+"\n" {return NEW_LINE;}
+"\t" {return TAB}
+" " {return SPACE;}
 
 
 . { }
