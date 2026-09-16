@@ -20,27 +20,24 @@
 program : v_d m_d
         ;
 
-var_decl : TYPE id id_prime
-         | SEMICOLON
+var_decl : TYPE id id_prime SEMICOLON
          ;
 
-v_d : COMMA v_d  var_decl 
+v_d : var_decl v_d
     | 
     ;
 
 id  : ALPHA alpha_num_prime
-    | 
     ;
 
-id_prime : id_prime id
+id_prime : COMMA id id_prime
          |
          ;
-
 
 method_decl : t_v  id LEFT_PARENTHESIS TYPE id t_i RIGHT_PARENTHESIS block
             ;
 
-m_d : m_d method_decl
+m_d : method_decl m_d
     |
     ;
 
@@ -79,18 +76,18 @@ else : ELSE block
      |
      ;
 
-stat : stat statement
+stat : statement stat
      |
      ;
 
 expr : id
-    | method_call
-    | literal
-    | expr bin_op expr
-    | SUBTRACT_OP expr
-    | EXCLAMATION expr
-    | LEFT_PARENTHESIS expr RIGHT_PARENTHESIS
-    ;
+     | method_call
+     | literal
+     | expr bin_op expr
+     | SUBTRACT_OP expr
+     | EXCLAMATION expr
+     | LEFT_PARENTHESIS expr RIGHT_PARENTHESIS
+     ;
 
 bin_op  : arith_op
         | rel_op
