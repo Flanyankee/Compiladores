@@ -17,25 +17,71 @@
 
 %%
 
-program : var_decl method_decl
+program : v_d m_d
+        ;
 
-var_decl : TYPE { id } COMMA
+var_decl : TYPE id id_prime
          | SEMICOLON
+         ;
 
-method_decl :  { TYPE | VOID } id ( [ {TYPE id} COMMA ] ) block
+v_d : COMMA v_d  var_decl 
+    | 
+    ;
 
-block : LEFT_BRACE var_decl statement RIGHT_BRACE
+id  : ALPHA alpha_num_prime
+    | 
+    ;
+
+id_prime : id_prime id
+         |
+         ;
+
+
+method_decl : t_v  id LEFT_PARENTHESIS TYPE id t_i RIGHT_PARENTHESIS block
+            ;
+
+m_d : m_d method_decl
+    |
+    ;
+
+t_v : TYPE
+    | VOID
+    ;
+
+t_i : COMMA t_i TYPE id 
+    |
+    ;
+
+method_call : id LEFT_PARENTHESIS m_c RIGHT_PARENTHESIS
+
+m_c : expr m_c_prime 
+  |
+  ;
+
+m_c_prime : COMMA expr m_c_prime
+        |
+        ;
+
+block : LEFT_BRACE v_d stat RIGHT_BRACE
+      ;
 
 statement : id ASIGN_OP expr SEMICOLON
     | method_decl SEMICOLON
-    | IF LEFT_PARENTHESIS expr RIGHT_PARENTHESIS block
-    | IF LEFT_PARENTHESIS expr RIGHT_PARENTHESIS block ELSE block
+    | IF LEFT_PARENTHESIS expr RIGHT_PARENTHESIS block else
     | WHILE LEFT_PARENTHESIS expr RIGHT_PARENTHESIS block
+    | RETURN SEMICOLON 
     | RETURN expr SEMICOLON
     | SEMICOLON
     | block
+    ;
 
-method_call : id LEFT_PARENTHESIS expr RIGHT_PARENTHESIS
+else : ELSE block
+     |
+     ;
+
+stat : stat statement
+     |
+     ;
 
 expr : id
     | method_call
@@ -44,39 +90,54 @@ expr : id
     | SUBTRACT_OP expr
     | EXCLAMATION expr
     | LEFT_PARENTHESIS expr RIGHT_PARENTHESIS
-    
+    ;
+
 bin_op  : arith_op
         | rel_op
         | cond_op
+        ;
 
 arith_op :  ADD_OP
     | SUBTRACT_OP
     | MULT_OP
     | DIV_OP
     | MOD_OP
+    ;
 
 rel_op  : LESS_OP
         | GREATER_OP
         | EQUALS_OP
+        ;
 
 cond_op : AND_OP
         | OR_OP
+        ;
 
 literal : int_literal
         | bool_literal
         | float_literal
-
-id  : ALPHA
-    | alpha_num
-    | UNDERSCORE
+        ;
 
 alpha_num   : ALPHA
             | DIGIT
+            | UNDERSCORE
+            ;
 
-int_literal : DIGIT
+alpha_num_prime : alpha_num alpha_num_prime
+                | 
+                ;
 
-bool_literal : BOOL
+int_literal : DIGIT int_literal_prime
+            ;
 
-float_literal: DIGIT DOT DIGIT
+int_literal_prime : int_literal
+                  | 
+                  ;
+
+bool_literal: BOOL
+            ;
+
+float_literal: int_literal DOT int_literal
+             ;
 
 %%
