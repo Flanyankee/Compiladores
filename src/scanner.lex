@@ -16,7 +16,7 @@ RETURN "return"
 %%
 
 {TYPE} {return TYPE;}
-{VOID} {return IF;}
+{VOID} {return VOID;}
 {IF} {return IF;}
 {ELSE} {return ELSE;}
 {WHILE} {return WHILE;}
@@ -27,6 +27,7 @@ RETURN "return"
 
 "&&" {return AND_OP;}
 "||" {return OR_OP;}
+"!" {return EXCLAMATION}
 "+" {return ADD_OP;}
 "-" {return SUBTRACT_OP;}
 "*" {return MULT_OP;}
@@ -35,11 +36,14 @@ RETURN "return"
 "=" {return ASIGN_OP;}
 "<" {return LESS_OP;}
 ">" {return GREATER_OP;}
+"." {return DOT;}
+"," {return COMA;}
 ";" {return SEMICOLON;}
 "(" {return LEFT_PARENTHESIS;}
 ")" {return RIGHT_PARENTHESIS;}
 "{" {return LEFT_BRACE;}
 "}" {return RIGHT_BRACE;}
+"_" {return UNDERSCORE;}
 "\n" {return NEW_LINE;}
 "\t" {return TAB}
 " " {return SPACE;}
