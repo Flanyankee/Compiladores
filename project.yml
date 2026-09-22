@@ -30,7 +30,7 @@
   :compile_threads: 8
 
   # enable release build (more details in release_build section below)
-  :release_build: FALSE
+  :release_build: TRUE
 
 # Specify where to find mixins and any that should be enabled automatically
 :mixins:

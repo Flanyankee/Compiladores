@@ -32,12 +32,13 @@ void handleCliInput(int num, char **args) {
 			strcpy(sourceFile, args[i]);
 		}
 	}
-	if (!sourceFileFound) {
+	if (!sourceFileFound && !helpFlag) {
 		printf("Error: %s. (Error code %d)\n", strerror(1), 1);
 		exit(2);
 	}
 	if (helpFlag) {
 		printHelp();
+		exit(0);
 	}
 }
 
