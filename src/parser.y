@@ -10,15 +10,25 @@
 %token WHILE IF ELSE RETURN
 %token <str> TYPE VOID BOOL DIGIT ALPHA
 %token AND_OP OR_OP ADD_OP MULT_OP SUBTRACT_OP ASIGN_OP DIV_OP MOD_OP LESS_OP GREATER_OP EQUALS_OP 
-%token DOT COMMA SEMICOLON LEFT_PARENTHESIS RIGHT_PARENTHESIS LEFT_BRACE RIGHT_BRACE UNDERSCORE EXCLAMATION NEW_LINE TAB SPACE
+%token DOT COMMA SEMICOLON LEFT_PARENTHESIS RIGHT_PARENTHESIS LEFT_BRACE RIGHT_BRACE UNDERSCORE EXCLAMATION NEW_LINE TAB SPACE COMENT
 
 %left AND_OP OR_OP
 %left ADD_OP SUBTRACT_OP MULT_OP DIV_OP MOD_OP
+%left EQUALS_OP LESS_OP GREATER_OP
+%right EXCLAMATION
 
 %%
 
-program : v_d m_d
+program : TYPE id decl_tail
+        | VOID id method_decl
         ;
+
+decl_tail   : id_prime SEMICOLON  
+            | LEFT_PARENTHESIS TYPE id t_i RIGHT_PARENTHESIS block 
+            ;
+
+method_decl : LEFT_PARENTHESIS TYPE id t_i RIGHT_PARENTHESIS block
+            ;
 
 var_decl : TYPE id id_prime SEMICOLON
          ;
@@ -34,18 +44,7 @@ id_prime : COMMA id id_prime
          |
          ;
 
-method_decl : t_v  id LEFT_PARENTHESIS TYPE id t_i RIGHT_PARENTHESIS block
-            ;
-
-m_d : method_decl m_d
-    |
-    ;
-
-t_v : TYPE
-    | VOID
-    ;
-
-t_i : COMMA t_i TYPE id 
+t_i : COMMA TYPE id t_i
     |
     ;
 
@@ -63,7 +62,7 @@ block : LEFT_BRACE v_d stat RIGHT_BRACE
       ;
 
 statement : id ASIGN_OP expr SEMICOLON
-    | method_decl SEMICOLON
+    | method_call SEMICOLON
     | IF LEFT_PARENTHESIS expr RIGHT_PARENTHESIS block else
     | WHILE LEFT_PARENTHESIS expr RIGHT_PARENTHESIS block
     | RETURN SEMICOLON 
@@ -83,32 +82,20 @@ stat : statement stat
 expr : id
      | method_call
      | literal
-     | expr bin_op expr
-     | SUBTRACT_OP expr
+     | expr ADD_OP expr
+     | expr SUBTRACT_OP expr
+     | expr MULT_OP expr
+     | expr DIV_OP expr
+     | expr MOD_OP expr
+     | expr LESS_OP expr
+     | expr GREATER_OP expr
+     | expr EQUALS_OP expr
+     | expr AND_OP expr
+     | expr OR_OP expr
+     | SUBTRACT_OP expr %prec MULT_OP
      | EXCLAMATION expr
      | LEFT_PARENTHESIS expr RIGHT_PARENTHESIS
      ;
-
-bin_op  : arith_op
-        | rel_op
-        | cond_op
-        ;
-
-arith_op :  ADD_OP
-    | SUBTRACT_OP
-    | MULT_OP
-    | DIV_OP
-    | MOD_OP
-    ;
-
-rel_op  : LESS_OP
-        | GREATER_OP
-        | EQUALS_OP
-        ;
-
-cond_op : AND_OP
-        | OR_OP
-        ;
 
 literal : int_literal
         | bool_literal
@@ -138,3 +125,4 @@ float_literal: int_literal DOT int_literal
              ;
 
 %%
+
