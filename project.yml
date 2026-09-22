@@ -102,6 +102,7 @@
   :source:
     - src/**
   :include:
+    - header/**
     - src/** # In simple projects, this entry often duplicates :source
   :support:
     - test/support
