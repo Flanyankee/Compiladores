@@ -1,6 +1,5 @@
 %top{
 #include <stdio.h>
-#include "extended-language.tab.h"
 }
 
 TYPE ("int"|"boolean"|"float")
@@ -27,7 +26,7 @@ RETURN "return"
 
 "&&" {return AND_OP;}
 "||" {return OR_OP;}
-"!" {return EXCLAMATION}
+"!" {return EXCLAMATION;}
 "+" {return ADD_OP;}
 "-" {return SUBTRACT_OP;}
 "*" {return MULT_OP;}
@@ -45,8 +44,9 @@ RETURN "return"
 "}" {return RIGHT_BRACE;}
 "_" {return UNDERSCORE;}
 "\n" {return NEW_LINE;}
-"\t" {return TAB}
+"\t" {return TAB;}
 " " {return SPACE;}
+"//" {return COMENT;}
 
 
 . { }
