@@ -2,10 +2,10 @@
 #ifndef CLI_H
 #define CLI_H
 
-extern char *prefix, *optimization, *outputFile, *targetStage, *debugFlag,
-    *helpFlag;
+extern char *optimization, *outputFile, *targetStage, *debugFlag, *helpFlag,
+    *sourceFile;
 
-void takeInput();
+void handleCliInput(int num, char *args[]);
 
 /**
  * Returns the optimization type.
@@ -30,6 +30,11 @@ int returnDebugFlag();
  * Returns a copy of the specified output file name.
  */
 char *returnOutputFile();
+
+/**
+ * Returns a copy of the specified source file name.
+ */
+char *returnSourceFile();
 
 void printHelp();
 #endif // CLI_H
