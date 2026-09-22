@@ -24,33 +24,32 @@ static void probar_token(const char* input, int expected_token) {
     yy_delete_buffer(buffer);
 }
 
-
-void data_type_scanner_test(void) {
+void test_data_type_scanner(void) {
     probar_token("int", TYPE);
     probar_token("boolean", TYPE);
     probar_token("float", TYPE);
     probar_token("void", VOID);
 }
 
-void reserved_words_scanner_test(void) {
+void test_reserved_words_scanner(void) {
     probar_token("if", IF);
     probar_token("else", ELSE);
     probar_token("while", WHILE);
     probar_token("return", RETURN);
 }
 
-void boolean_scanner_test(void) {
+void test_boolean_scanner(void) {
     probar_token("true", BOOL);
     probar_token("false", BOOL);
 }
 
-void pattern_scanner_test(void) {
+void test_pattern_scanner(void) {
     probar_token("a", ALPHA);
     probar_token("Z", ALPHA);
     probar_token("5", DIGIT);
 }
 
-void operator_scanner_test(void) {
+void test_operator_scanner(void) {
     probar_token("&&", AND_OP);
     probar_token("||", OR_OP);
     probar_token("!", EXCLAMATION);
@@ -64,7 +63,7 @@ void operator_scanner_test(void) {
     probar_token(">", GREATER_OP);
 }
 
-void gruping_scanner_test(void) {
+void test_gruping_scanner(void) {
     probar_token(".", DOT);
     probar_token(",", COMMA);
     probar_token(";", SEMICOLON);
@@ -75,7 +74,7 @@ void gruping_scanner_test(void) {
     probar_token("_", UNDERSCORE);
 }
 
-void ignored_tokens_scanner_test(void) {
+void test_ignored_tokens_scanner(void) {
     probar_token("//", COMENT); 
     probar_token("\n", NEW_LINE);
     probar_token("\t", TAB);
