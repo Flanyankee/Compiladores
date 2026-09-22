@@ -1,7 +1,6 @@
 #include "cli.h"
 #include "cli.tab.h"
-#include "optimizations.h"
-#include "compiler-stages.h"
+#include "constants.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,7 +23,8 @@ int returnOptimization() {
 	if (strcmp(optimization, "none") == 0) {
 		return -1;
 	} else if (strcmp(optimization, "death-code") == 0) {
-		return deathCode; } else {
+		return deathCode;
+	} else {
 		return 9999;
 	}
 }

@@ -67,7 +67,7 @@
 
 
 /* First part of user prologue.  */
-#line 1 "src/cli/cli.y"
+#line 1 "cli.y"
 
 #include "cli.h"
 #include <stdio.h>
@@ -1084,55 +1084,55 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* CLI: PREFIX Target Output Optimizations Debug SOURCE_FILE NEW_LINE  */
-#line 18 "src/cli/cli.y"
+#line 18 "cli.y"
                                                                     {prefix = (yyvsp[-6].str); YYACCEPT;}
 #line 1090 "cli.tab.c"
     break;
 
   case 3: /* CLI: PREFIX HELP NEW_LINE  */
-#line 19 "src/cli/cli.y"
+#line 19 "cli.y"
                            {prefix = (yyvsp[-2].str); helpFlag = (yyvsp[-1].str); YYACCEPT;}
 #line 1096 "cli.tab.c"
     break;
 
   case 4: /* CLI: PREFIX NEW_LINE  */
-#line 20 "src/cli/cli.y"
+#line 20 "cli.y"
                       {prefix = (yyvsp[-1].str); helpFlag = "-h"; YYACCEPT;}
 #line 1102 "cli.tab.c"
     break;
 
   case 5: /* Target: TARGET TARGET_OPTIONS  */
-#line 22 "src/cli/cli.y"
+#line 22 "cli.y"
                                {targetStage = (yyvsp[0].str);}
 #line 1108 "cli.tab.c"
     break;
 
   case 7: /* Output: OUTPUT OUTPUT_FILE  */
-#line 25 "src/cli/cli.y"
+#line 25 "cli.y"
                             {outputFile = (yyvsp[0].str);}
 #line 1114 "cli.tab.c"
     break;
 
   case 8: /* Output: OUTPUT CHAR  */
-#line 26 "src/cli/cli.y"
+#line 26 "cli.y"
                      {outputFile = (yyvsp[0].str);}
 #line 1120 "cli.tab.c"
     break;
 
   case 9: /* Output: OUTPUT NUM  */
-#line 27 "src/cli/cli.y"
+#line 27 "cli.y"
                     {outputFile = (yyvsp[0].str);}
 #line 1126 "cli.tab.c"
     break;
 
   case 11: /* Optimizations: OPTIMIZE OPTIMIZE_ARGS  */
-#line 30 "src/cli/cli.y"
+#line 30 "cli.y"
                                        {optimization = (yyvsp[0].str);}
 #line 1132 "cli.tab.c"
     break;
 
   case 13: /* Debug: DEBUG  */
-#line 33 "src/cli/cli.y"
+#line 33 "cli.y"
               {debugFlag = (yyvsp[0].str);}
 #line 1138 "cli.tab.c"
     break;
@@ -1331,7 +1331,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 36 "src/cli/cli.y"
+#line 36 "cli.y"
 
 
 void yyerror(const char* s) {
