@@ -1,5 +1,6 @@
 %top{
 #include <stdio.h>
+#include "parser.tab.h"
 }
 
 TYPE ("int"|"boolean"|"float")
@@ -36,7 +37,7 @@ RETURN "return"
 "<" {return LESS_OP;}
 ">" {return GREATER_OP;}
 "." {return DOT;}
-"," {return COMA;}
+"," {return COMMA;}
 ";" {return SEMICOLON;}
 "(" {return LEFT_PARENTHESIS;}
 ")" {return RIGHT_PARENTHESIS;}
