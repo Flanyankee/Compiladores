@@ -3,6 +3,8 @@
 #include "parser.tab.h"
 }
 
+%option noyywrap
+
 TYPE ("int"|"boolean"|"float")
 VOID "void"
 DIGIT [0-9]
