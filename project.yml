@@ -43,7 +43,7 @@
 
 # further details to configure the way Ceedling handles release code
 :release_build:
-  :output: MyApp.out
+  :output: c-tds
   :use_assembly: FALSE
   :artifacts: []
 
@@ -112,7 +112,9 @@
 # and release collections. Usually it's better to use paths and let
 # Ceedling do the work for you!
 :files:
-  :test: []
+  :test: 
+    - -:test/test_main.c
+    - -:test/test_compiler-manager.c
   :source: []
 
 # Compilation symbols to be injected into builds

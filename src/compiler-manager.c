@@ -11,6 +11,7 @@
 int optimizationLevel, target, isDebugEnabled;
 char *sourceFileName;
 FILE *source;
+FILE *outputFilePtr = NULL;
 
 void manageCompilation() {
 	optimizationLevel = returnOptimization();
@@ -65,6 +66,7 @@ void scannerStage() {
 		printf("\n");
 		exit(1);
 	}
+	outputFilePtr = out;
 
 	yyin = source;
 
@@ -84,12 +86,11 @@ void parseStage() {
 		printf("\n");
 		exit(1);
 	}
+	outputFilePtr = out;
 
 	yyin = source;
 	if (yyparse() == 0) {
 		fprintf(out, "Cadena aceptada.\n");
-	} else {
-		fprintf(out, "Syntax error in line %d\n", yylineno);
 	}
 	fclose(out);
 };
