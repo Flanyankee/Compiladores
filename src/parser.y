@@ -44,13 +44,17 @@ m_d : method_decl m_d
     |
     ;
 
-method_decl : TYPE id LEFT_PARENTHESIS TYPE id t_i RIGHT_PARENTHESIS block
-	    | VOID id LEFT_PARENTHESIS TYPE id t_i RIGHT_PARENTHESIS block
+method_decl : TYPE id LEFT_PARENTHESIS t_i RIGHT_PARENTHESIS block
+	    | VOID id LEFT_PARENTHESIS t_i RIGHT_PARENTHESIS block
             ;
 
-t_i : COMMA TYPE id t_i 
-    |
+t_i : TYPE id t_i_2
+    | 
     ;
+
+t_i_2 : COMMA TYPE id t_i_2
+      | 
+      ;
 
 method_call : id LEFT_PARENTHESIS m_c RIGHT_PARENTHESIS
 
