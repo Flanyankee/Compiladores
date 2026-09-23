@@ -6,8 +6,8 @@
 \babelfont{rm}{Noto Sans}
 \usepackage{enumitem}
 \setlist[itemize]{label=-}
-\usepackage{hyperref}
 \usepackage{xcolor}
+\usepackage{hyperref}
 
 \definecolor{primary}{RGB}{44, 62, 80}
 
@@ -72,7 +72,7 @@ Para facilitar la revisión y prueba del proyecto, a continuación se detallan l
 \subsection*{1. Instalación de Dependencias (Ceedling)}
 Para la ejecución automatizada de los tests y la construcción del proyecto es necesario contar con Ceedling. Dado que esta herramienta está construida sobre Ruby, se instala de manera global a través de su gestor de paquetes (\textit{gem}):
 \begin{verbatim}
-gem install ceedling
+gem install ceedling --no-document
 \end{verbatim}
 
 \subsection*{2. Compilación Manual (Flex, Bison y GCC)}
@@ -95,13 +95,13 @@ gcc @compile_flags.txt src/parser.tab.c src/lex.yy.c -lfl -o compilador
 \end{verbatim}
 \end{itemize}
 
-\subsection*{3. Ejecución Rápida}
+\subsection*{2.5. Ejecución Rápida}
 Para realizar una prueba rápida redirigiendo un archivo de texto como entrada estándar al ejecutable generado:
 \begin{verbatim}
 ./compilador < Test.txt
 \end{verbatim}
 
-\subsection*{4. Testing y Construcción con Ceedling}
+\subsection*{3. Testing y Construcción con Ceedling}
 Al estar integrado con Ceedling, la compilación y ejecución de las pruebas se puede realizar directamente desde la terminal posicionándose en la raíz del proyecto.
 
 \begin{itemize}
@@ -116,7 +116,7 @@ Para compilar todo el código y obtener el ejecutable final de lanzamiento (Rele
 \end{verbatim}
 \textit{Nota: Este comando compila el código y genera automáticamente el ejecutable final en la ruta \texttt{build/artifacts/release}.}
 
-\subsection*{5. Automatización mediante Scripts (.sh)}
+\subsection*{4. Automatización mediante Scripts (.sh)}
 Para facilitar el uso, se han hecho dos \textit{scripts} de consola que automatizan la regeneración de los analizadores léxico y sintáctico (Flex y Bison) combinándolos con la construcción o evaluación en Ceedling. 
 
 Los archivos preparados para su ejecución rápida son \textbf{\texttt{compile.sh}} y \textbf{\texttt{run-tests.sh}}:
