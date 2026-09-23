@@ -137,3 +137,27 @@ void test_parser_invalid_while_operation(void){
     int result = parse_string(code);
     TEST_ASSERT_EQUAL_INT_MESSAGE(1, result, "The parser encountered an invalid `while` statement");
 }
+
+void test_parser_valid_line_comment(void){
+    const char* code = "int main(){int x; x = 3; //This is e line comment \n}";
+    int result = parse_string(code);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(0, result, "The parser rejected a valid Comment");
+}
+
+void test_parser_invalid_line_coment(void){
+    const char* code = "int main(){int x; x = 3; //This is e faild line comment}";
+    int result = parse_string(code);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(1, result, "The parser acept an invalid Comment");
+}
+
+void test_parser_valid_multiple_line_comment(void){
+    const char* code = "int main(){int x; x = 3; /*This is a comment \n Dear God \n And the're more\n NO \n It contains a comment \n */  return 3 + x;}";
+    int result = parse_string(code);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(0, result, "The parser rejected a valid multiple line Comment");
+}
+
+void test_parser_invalid_multiple_line_coment(void){
+    const char* code = "int main(){int x; x = 3; /*This is a comment \n But it won't close \n So it's sure to fail}";
+    int result = parse_string(code);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(1, result, "The parser acept an invalid multiple line Comment");
+}
