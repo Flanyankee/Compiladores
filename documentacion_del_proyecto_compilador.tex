@@ -1,0 +1,131 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage[a4paper, margin=2.5cm]{geometry}
+\usepackage{fontspec}
+\usepackage[spanish, bidi=basic, provide=*]{babel}
+\babelprovide[import, onchar=ids fonts]{spanish}
+\babelfont{rm}{Noto Sans}
+\usepackage{enumitem}
+\setlist[itemize]{label=-}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\definecolor{primary}{RGB}{44, 62, 80}
+
+\begin{document}
+
+\begin{center}
+    {\LARGE \textbf{\textcolor{primary}{Documentación del Proyecto Compilador}}} \\
+    \vspace{0.5cm}
+    {\large \textbf{Etapa:} Scanner, Parser, Tests y Comandos}
+\end{center}
+\vspace{0.8cm}
+
+\section{División del Trabajo}
+El desarrollo de esta etapa del compilador (Scanner, Parser, Tests y comandos) fue realizado de manera colaborativa. Las responsabilidades se distribuyeron de la siguiente manera:
+
+\begin{itemize}
+    \item \textbf{Identificación de símbolos y elaboración del \texttt{scanner.lex}:} Francisco Andreani.
+    \item \textbf{Refactorización de la gramática:} Gribaudo Re Francisco, Francisco Andreani.
+    \item \textbf{Elaboración del \texttt{parser.y} (Gramática en Bison):} Gribaudo Re Francisco, Valentín Pastre Thuer.
+    \item \textbf{Unidades de test:} Valentín Pastre Thuer, Gribaudo Re Francisco, Francisco Andreani.
+    \item \textbf{Interfaz de Línea de Comandos (CLI):} Valentín Pastre Thuer.
+\end{itemize}
+
+\section{Decisiones de Diseño, Suposiciones y Aclaraciones}
+La decisión de diseño más importante de esta etapa fue diferenciar claramente las responsabilidades entre el análisis léxico (Scanner) y el análisis sintáctico (Parser).
+
+\begin{itemize}
+    \item Se decidió consumir en el scanner \textbf{únicamente los símbolos terminales}.
+    \item El scanner (\texttt{scanner.lex}) no agrupa caracteres en literales complejos o identificadores completos mediante expresiones regulares, sino que se limita a retornar tokens básicos como \texttt{DIGIT} (para números del 0 al 9) y \texttt{ALPHA} (para letras minúsculas y mayúsculas).
+    \item Se asumió que la lógica de agrupación y repetición (las expresiones regulares de la gramática original) debía trasladarse hacia nuevas reglas dentro de la gramática del parser.
+    \item Los operadores de múltiples caracteres, como \texttt{\&\&}, \texttt{||}, y palabras reservadas, son detectados como tokens únicos en el scanner (\texttt{AND\_OP}, \texttt{OR\_OP}, \texttt{IF}, etc.) para simplificar el árbol sintáctico.
+\end{itemize}
+
+\section{Diseño y Decisiones Clave: Modificaciones a la Gramática}
+La gramática original propuesta utilizaba Notación EBNF, incluyendo construcciones como \texttt{[ x ]} para elementos opcionales, \texttt{x*} para cero o más repeticiones, y \texttt{x\textsuperscript{+} ,} para listas separadas por comas. Dado que Bison (Yacc) trabaja con gramáticas libres de contexto, fue necesario transformar todas estas expresiones eliminando la notación extendida y reemplazándola por recursividad explícita.
+
+Las alternativas analizadas y las decisiones tomadas fueron:
+
+\begin{itemize}
+    \item \textbf{Implementación de clausuras de Kleene (*) y repeticiones (+):} En lugar de resolver las repeticiones en el scanner, se crearon reglas recursivas (recursividad por derecha) con producciones \textit{prime} o derivadas. Por ejemplo, la gramática original dictaba la formación de literales enteros (\texttt{int\_literal --> digit digit*}). Esto se transformó en dos reglas sintácticas: \texttt{int\_literal : DIGIT int\_literal\_prime ;} y \texttt{int\_literal\_prime : int\_literal | /* lambda */ ;}.
+    
+    \item \textbf{Listas separadas por comas (x\textsuperscript{+} ,):} Para la declaración de variables de la forma \texttt{<type> \{<id>\}\textsuperscript{+} , ;}, se dividió la lógica en la regla principal \texttt{var\_decl : TYPE id id\_prime SEMICOLON}. El no-terminal \texttt{id\_prime} se encarga de consumir recursivamente la coma y los identificadores subsecuentes (\texttt{id\_prime : COMMA id id\_prime | /* lambda */ ;}).
+    
+    \item \textbf{Elementos Opcionales ([ ]):} Para instrucciones como el \texttt{return}, que en la especificación original admitía opcionalmente una expresión (\texttt{return [<expr>] ;}), se optó por ramificar la regla en dos alternativas explícitas: \texttt{RETURN SEMICOLON} y \texttt{RETURN expr SEMICOLON}. Lo mismo se aplicó para la estructura \textit{if-else}, dividiendo la regla mediante un no-terminal \texttt{else} que deriva en \texttt{ELSE block} o en vacío.
+\end{itemize}
+
+\section{Detalles de Implementación Interesantes}
+
+\begin{itemize}
+    \item \textbf{Delegación Léxica al Parser:} A diferencia de las implementaciones tradicionales donde el Scanner valida la estructura completa de un número flotante o un identificador, aquí el Parser (\texttt{parser.y}) asume esa responsabilidad. Por ejemplo, un número de punto flotante se construye sintácticamente uniendo literales enteros separados por un token de punto: \texttt{float\_literal: int\_literal DOT int\_literal}. De igual forma, los identificadores alfanuméricos se arman a través de recursividad: \texttt{id : ALPHA alpha\_num\_prime ;} donde \texttt{alpha\_num\_prime} permite concatenar más letras, dígitos o guiones bajos.
+    
+    \item \textbf{Manejo de Precedencia y Asociatividad:} Para evitar conflictos de desplazamiento/reducción (\textit{shift/reduce}) típicos en las gramáticas de expresiones aritméticas y lógicas, se declararon directivas de precedencia por izquierda (\texttt{\%left}) en Bison. Se estableció que operadores lógicos como \texttt{AND\_OP} y \texttt{OR\_OP} tienen una jerarquía, seguidos por operadores aritméticos de suma/resta (\texttt{ADD\_OP}, \texttt{SUBTRACT\_OP}) y finalmente multiplicación/división (\texttt{MULT\_OP}, \texttt{DIV\_OP}, \texttt{MOD\_OP}).
+    
+    \item \textbf{Archivos Auxiliares (CLI):} El proyecto incluye una estructura de línea de comandos que permite controlar hasta qué etapa compilar (\texttt{-target scan}, \texttt{-target parse}, etc.) y banderas de \textit{debug} que facilitarán la visualización de la ejecución en las siguientes etapas del proyecto.
+    
+    \item \textbf{Integración de Ceedling:} Para el testeo de unidad utilizamos Ceedling, el cual es un sistema de construcción (\textit{build system}) centrado en pruebas para C. Esta herramienta automatiza la compilación y ejecución de las pruebas integrando \textit{frameworks} como Unity y CMock. Como se refleja en nuestro archivo de configuración \texttt{project.yml}, el entorno está estructurado para separar el código fuente (\texttt{src/**} y \texttt{header/**}) de los archivos de testeo (\texttt{test/**}). Adicionalmente, habilitamos el uso de plugins como \texttt{module\_generator}, que nos permite crear rápidamente plantillas de archivos y tests, y \texttt{report\_tests\_pretty\_stdout}, para obtener una salida de consola más limpia y legible al momento de evaluar los resultados de los casos de prueba.
+\end{itemize}
+
+\section{Instrucciones de Compilación y Ejecución}
+Para facilitar la revisión y prueba del proyecto, a continuación se detallan los comandos necesarios para compilar el código fuente, ejecutar las pruebas y construir la versión final.
+
+\subsection*{1. Instalación de Dependencias (Ceedling)}
+Para la ejecución automatizada de los tests y la construcción del proyecto es necesario contar con Ceedling. Dado que esta herramienta está construida sobre Ruby, se instala de manera global a través de su gestor de paquetes (\textit{gem}):
+\begin{verbatim}
+gem install ceedling
+\end{verbatim}
+
+\subsection*{2. Compilación Manual (Flex, Bison y GCC)}
+Si se desea generar los analizadores léxico y sintáctico de forma manual, y luego compilar el ejecutable del proyecto, se deben ejecutar los siguientes comandos:
+
+\begin{itemize}
+    \item \textbf{Generar el Scanner (Flex):}
+\begin{verbatim}
+flex --header-file=header/scanner.h -o src/lex.yy.c src/scanner.lex
+\end{verbatim}
+
+    \item \textbf{Generar el Parser (Bison):}
+\begin{verbatim}
+bison src/parser.y -o src/parser.tab.c --defines=header/parser.tab.h
+\end{verbatim}
+
+    \item \textbf{Compilar con GCC:}
+\begin{verbatim}
+gcc @compile_flags.txt src/parser.tab.c src/lex.yy.c -lfl -o compilador
+\end{verbatim}
+\end{itemize}
+
+\subsection*{3. Ejecución Rápida}
+Para realizar una prueba rápida redirigiendo un archivo de texto como entrada estándar al ejecutable generado:
+\begin{verbatim}
+./compilador < Test.txt
+\end{verbatim}
+
+\subsection*{4. Testing y Construcción con Ceedling}
+Al estar integrado con Ceedling, la compilación y ejecución de las pruebas se puede realizar directamente desde la terminal posicionándose en la raíz del proyecto.
+
+\begin{itemize}
+    \item \textbf{Correr tests del Parser:} \texttt{./ceedling test:parser}
+    \item \textbf{Correr tests del Scanner:} \texttt{./ceedling test:scanner}
+    \item \textbf{Correr todos los tests:} \texttt{./ceedling test:all}
+\end{itemize}
+
+Para compilar todo el código y obtener el ejecutable final de lanzamiento (Release), se utiliza:
+\begin{verbatim}
+./ceedling release
+\end{verbatim}
+\textit{Nota: Este comando compila el código y genera automáticamente el ejecutable final en la ruta \texttt{build/artifacts/release}.}
+
+\section{Problemas Conocidos y Testing}
+
+\begin{itemize}
+    \item \textbf{Conflictos de Shift/Reduce:} Durante la implementación del analizador sintáctico (Parser), el principal problema detectado fue la aparición de múltiples conflictos de \textit{shift/reduce} reportados por Bison.
+    
+    \item \textbf{Reglas Afectadas:} Estos problemas de ambigüedad se presentaron al evaluar las expresiones con operadores, pero fundamentalmente afectaron a las reglas estructurales de la gramática: \texttt{<program>}, \texttt{<var\_decl>} y \texttt{<method\_decl>}.
+    
+    \item \textbf{Refactorización y Solución:} Para solucionar estas colisiones, tuvimos que refactorizar la gramática. Esto se logró reescribiendo las producciones de las declaraciones de variables y métodos para eliminar las ambigüedades lógicas, asegurando que el parser pudiera decidir correctamente si desplazar (\textit{shift}) o reducir (\textit{reduce}). Además, como se mencionó en las decisiones de diseño, las ambigüedades de los operadores se resolvieron estableciendo sus precedencias de forma explícita.
+    
+    \item \textbf{Estrategia de Testing:} La detección de estos problemas y la validación de las refactorizaciones se realizaron mediante la elaboración y ejecución de casos de prueba. El uso del \textit{framework} de testing (Ceedling) nos permitió correr las pruebas tras cada cambio en la gramática, asegurando que las modificaciones para resolver los conflictos en \texttt{<program>} y las declaraciones no rompieran el reconocimiento léxico ni la estructura del resto del compilador.
+\end{itemize}
+
+\end{document}
