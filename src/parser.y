@@ -2,8 +2,8 @@
     #include <stdio.h>
     #include <stdlib.h>
     #include <string.h>
+    #include "scanner.h"
 
-    extern int yylex();
     void yyerror(const char *s);
 %}
 
@@ -15,12 +15,11 @@
 %token WHILE IF ELSE RETURN
 %token <str> TYPE VOID BOOL DIGIT ALPHA
 %token AND_OP OR_OP ADD_OP MULT_OP SUBTRACT_OP ASIGN_OP DIV_OP MOD_OP LESS_OP GREATER_OP EQUALS_OP 
-%token DOT COMMA SEMICOLON LEFT_PARENTHESIS RIGHT_PARENTHESIS LEFT_BRACE RIGHT_BRACE UNDERSCORE EXCLAMATION COMENT
+%token DOT COMMA SEMICOLON LEFT_PARENTHESIS RIGHT_PARENTHESIS LEFT_BRACE RIGHT_BRACE UNDERSCORE EXCLAMATION 
 
 %left AND_OP OR_OP
 %left ADD_OP SUBTRACT_OP MULT_OP DIV_OP MOD_OP
-%left EQUALS_OP LESS_OP GREATER_OP
-%right EXCLAMATION
+%right EXCLAMATION 
 %nonassoc GREATER_OP LESS_OP EQUALS_OP
 
 %%
@@ -149,5 +148,5 @@ float_literal: int_literal DOT int_literal
 %%
 
 void yyerror(const char* s) {
-        fprintf(stderr, "Error: %s\n", s);
+        fprintf(stderr, "Error Sintactico: %s en la linea %d\n", yytext, yylineno);
 }

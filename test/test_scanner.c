@@ -73,10 +73,3 @@ void test_gruping_scanner(void) {
     probar_token("}", RIGHT_BRACE);
     probar_token("_", UNDERSCORE);
 }
-
-void test_ignored_tokens_scanner(void) {
-    probar_token("//", COMENT); 
-    probar_token("\n", NEW_LINE);
-    probar_token("\t", TAB);
-    probar_token(" ", SPACE);
-}

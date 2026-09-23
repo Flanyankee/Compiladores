@@ -1,9 +1,13 @@
 %top{
 #include <stdio.h>
+#include <stdlib.h>
 #include "parser.tab.h"
 }
 
 %option noyywrap
+%option yylineno
+
+%x COMENTARIO
 
 TYPE ("int"|"boolean"|"float")
 VOID "void"
@@ -50,7 +54,17 @@ RETURN "return"
 "\n" { }
 "\t" { }
 " " { }
-"//" {return COMENT;}
+
+"//".* { }
+
+"/*"               { BEGIN(COMENTARIO);  }
+<COMENTARIO>"*/"   { BEGIN(INITIAL);     }
+<COMENTARIO>\n     { }
+<COMENTARIO>.      { }
+<COMENTARIO><<EOF>> { 
+                     fprintf(stderr, "Error lexico: Comentario sin cerrar en la linea %d\n", yylineno); 
+                     BEGIN(INITIAL); 
+                   }
 
 
-. { }
+. {fprintf(stderr, "Error lexico : Caracter no reconocido %s\n", yytext); } 
