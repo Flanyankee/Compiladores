@@ -1,2 +1,2 @@
-enum optimizations { none, deathCode };
-enum compilerStages { scan, parse, codinter, assembly };
+enum optimizations { none };
+enum compilerStages { scan, parse, codinter, assembly, object };

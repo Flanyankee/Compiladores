@@ -9,6 +9,13 @@
  */
 void manageCompilation();
 
-void createScanner();
+void executeStage(int targetStage);
+void applyOptimization(int optimizationLevel);
+
+void scannerStage();
+void parseStage();
+void codinterStage();
+void assemblyStage();
+void objectStage();
 
 #endif // COMPILER_MANAGER_H

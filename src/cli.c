@@ -49,8 +49,6 @@ int returnOptimization() {
 
 	if (strcmp(optimization, "none") == 0) {
 		return -1;
-	} else if (strcmp(optimization, "death-code") == 0) {
-		return deathCode;
 	} else {
 		return 9999;
 	}
@@ -58,7 +56,7 @@ int returnOptimization() {
 
 int returnTargetStage() {
 	if (!targetStage) {
-		return parse;
+		return object;
 	}
 
 	if (strcmp(targetStage, "scan") == 0) {
@@ -81,12 +79,13 @@ int returnDebugFlag() {
 }
 
 char *returnOutputFile() {
+	char *nameCopy = (char *)malloc(sizeof(char));
 	if (outputFile) {
-		char *nameCopy = (char *)malloc(sizeof(char));
 		strcpy(nameCopy, outputFile);
 		return nameCopy;
 	} else {
-		return "outputFile";
+		strcpy(nameCopy, "outputFile");
+		return nameCopy;
 	}
 }
 
