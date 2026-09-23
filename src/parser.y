@@ -21,13 +21,14 @@
 %left ADD_OP SUBTRACT_OP MULT_OP DIV_OP MOD_OP
 %left EQUALS_OP LESS_OP GREATER_OP
 %right EXCLAMATION
+%nonassoc GREATER_OP LESS_OP EQUALS_OP
 
 %%
 
 program : v_d m_d
         ;
 
-v_d : v_d var_decl 
+v_d : v_d var_decl //v_d es var declaration
     | 
     ;
 
@@ -41,15 +42,15 @@ id_prime : COMMA id id_prime
 id  : ALPHA alpha_num_prime
     ;
 
-m_d : method_decl m_d
+m_d : method_decl m_d //m_d es method declaration
     |
     ;
 
 method_decl : TYPE id LEFT_PARENTHESIS t_i RIGHT_PARENTHESIS block
-	    | VOID id LEFT_PARENTHESIS t_i RIGHT_PARENTHESIS block
+	        | VOID id LEFT_PARENTHESIS t_i RIGHT_PARENTHESIS block
             ;
 
-t_i : TYPE id t_i_2
+t_i : TYPE id t_i_2 //t_i es type id
     | 
     ;
 
@@ -59,7 +60,7 @@ t_i_2 : COMMA TYPE id t_i_2
 
 method_call : id LEFT_PARENTHESIS m_c RIGHT_PARENTHESIS
 
-m_c : expr m_c_prime 
+m_c : expr m_c_prime //m_c es method call
   |
   ;
 
@@ -84,7 +85,7 @@ else : ELSE block
      |
      ;
 
-stat : statement stat
+stat : statement stat //stat es statement
      |
      ;
 
