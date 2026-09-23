@@ -46,9 +46,9 @@ RETURN "return"
 "{" {return LEFT_BRACE;}
 "}" {return RIGHT_BRACE;}
 "_" {return UNDERSCORE;}
-"\n" {return NEW_LINE;}
-"\t" {return TAB;}
-" " {return SPACE;}
+"\n" { }
+"\t" { }
+" " { }
 "//" {return COMENT;}
 
 
