@@ -56,7 +56,7 @@ int returnOptimization() {
 
 int returnTargetStage() {
 	if (!targetStage) {
-		return object;
+		return parse;
 	}
 
 	if (strcmp(targetStage, "scan") == 0) {
