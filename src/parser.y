@@ -4,6 +4,7 @@
     #include <string.h>
     #include "scanner.h"
 
+    extern FILE *outputFilePtr;
     void yyerror(const char *s);
 %}
 
@@ -148,5 +149,8 @@ float_literal: int_literal DOT int_literal
 %%
 
 void yyerror(const char* s) {
-        fprintf(stderr, "Error Sintactico: %s en la linea %d\n", yytext, yylineno);
+	if (outputFilePtr) {
+		fprintf(outputFilePtr, "Error sintactico en la linea %d\n", yylineno);
+		exit(1);
+	}
 }

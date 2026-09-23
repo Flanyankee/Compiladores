@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "parser.tab.h"
+extern FILE *outputFilePtr;
 }
 
 %option noyywrap
@@ -62,9 +63,15 @@ RETURN "return"
 <COMENTARIO>\n     { }
 <COMENTARIO>.      { }
 <COMENTARIO><<EOF>> { 
-                     fprintf(stderr, "Error lexico: Comentario sin cerrar en la linea %d\n", yylineno); 
+		     if (outputFilePtr) {
+                     	fprintf(outputFilePtr, "Error lexico: Comentario sin cerrar en la linea %d\n", yylineno); 
+			exit(1);
+		     }
                      BEGIN(INITIAL); 
                    }
 
 
-. {fprintf(stderr, "Error lexico : Caracter no reconocido %s\n", yytext); } 
+. {if (outputFilePtr) { 
+	fprintf(outputFilePtr, "Error lexico: Caracter %s no reconocido en la linea %d\n", yytext, yylineno);
+	exit(1);
+   }} 
