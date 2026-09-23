@@ -35,6 +35,7 @@ RETURN "return"
 "*" {return MULT_OP;}
 "/" {return DIV_OP;}
 "%" {return MOD_OP;}
+"==" {return EQUALS_OP;}
 "=" {return ASIGN_OP;}
 "<" {return LESS_OP;}
 ">" {return GREATER_OP;}

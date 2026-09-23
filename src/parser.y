@@ -7,6 +7,11 @@
     void yyerror(const char *s);
 %}
 
+%union {
+	char* str;
+}
+
+
 %token WHILE IF ELSE RETURN
 %token <str> TYPE VOID BOOL DIGIT ALPHA
 %token AND_OP OR_OP ADD_OP MULT_OP SUBTRACT_OP ASIGN_OP DIV_OP MOD_OP LESS_OP GREATER_OP EQUALS_OP 
@@ -16,10 +21,6 @@
 %left ADD_OP SUBTRACT_OP MULT_OP DIV_OP MOD_OP
 %left EQUALS_OP LESS_OP GREATER_OP
 %right EXCLAMATION
-
-%union {
-	char* str;
-}
 
 %%
 
