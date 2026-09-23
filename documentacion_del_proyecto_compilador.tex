@@ -116,6 +116,29 @@ Para compilar todo el código y obtener el ejecutable final de lanzamiento (Rele
 \end{verbatim}
 \textit{Nota: Este comando compila el código y genera automáticamente el ejecutable final en la ruta \texttt{build/artifacts/release}.}
 
+\subsection*{5. Automatización mediante Scripts (.sh)}
+Para facilitar el uso, se han hecho dos \textit{scripts} de consola que automatizan la regeneración de los analizadores léxico y sintáctico (Flex y Bison) combinándolos con la construcción o evaluación en Ceedling. 
+
+Los archivos preparados para su ejecución rápida son \textbf{\texttt{compile.sh}} y \textbf{\texttt{run-tests.sh}}:
+
+\begin{itemize}
+    \item \textbf{Para compilar todo (\texttt{./compile.sh}):} Regenera el Scanner y el Parser, y si esto es exitoso, ejecuta la compilación final para \textit{release}. Su contenido interno encadena las herramientas:
+\begin{verbatim}
+flex --header-file=header/scanner.h -o src/lex.yy.c src/scanner.lex && \
+bison src/parser.y -o src/parser.tab.c --defines=header/parser.tab.h && \
+ceedling release
+\end{verbatim}
+    \textit{Ejecución:} \texttt{./compile.sh}
+
+    \item \textbf{Para correr las pruebas (\texttt{./run-tests.sh}):} Regenera el Scanner y el Parser, para inmediatamente después ejecutar la batería completa de pruebas unitarias. Su contenido interno es:
+\begin{verbatim}
+flex --header-file=header/scanner.h -o src/lex.yy.c src/scanner.lex && \
+bison src/parser.y -o src/parser.tab.c --defines=header/parser.tab.h && \
+ceedling test:all
+\end{verbatim}
+    \textit{Ejecución:} \texttt{./run-tests.sh}
+\end{itemize}
+
 \section{Problemas Conocidos y Testing}
 
 \begin{itemize}
