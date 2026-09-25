@@ -3,14 +3,14 @@
 #include "syntax-tree.h"
 
 typedef struct SymbolTabElem {
-  Symbol *symbol;
-  struct SymbolTabElem *next;
-  struct SymbolTabElem *back;
+	Symbol *symbol;
+	struct SymbolTabElem *next;
+	struct SymbolTabElem *back;
 } SymbolTabElem;
 
 typedef struct SymbolTab {
-  struct SymbolTabElem *first;
-  struct SymbolTabElem *last;
+	struct SymbolTabElem *first;
+	struct SymbolTabElem *last;
 } SymbolTab;
 
 SymbolTab *initializeSymbolTab();
