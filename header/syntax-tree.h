@@ -18,5 +18,5 @@ typedef struct ASTNode {
 
 ASTNode *makeNode(Symbol *symbol, ASTNode *left, ASTNode *right);
 ASTNode *makeLeaf(Symbol *symbol);
-Symbol *makeSymbol(char *id, enum symbolTypes symType, enum types valueType);
+Symbol *makeSymbol(char *id, enum symbolTypes symType);
 #endif

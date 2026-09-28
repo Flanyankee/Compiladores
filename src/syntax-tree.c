@@ -12,11 +12,11 @@ ASTNode *makeNode(Symbol *symbol, ASTNode *left, ASTNode *right) {
 
 ASTNode *makeLeaf(Symbol *symbol) { return makeNode(symbol, NULL, NULL); }
 
-Symbol *makeSymbol(char *id, enum symbolTypes symType, enum types valueType) {
+Symbol *makeSymbol(char *id, enum symbolTypes symType) {
 	Symbol *symbol = (Symbol *)malloc(sizeof(Symbol));
 	symbol->symbolType = symType;
 	symbol->id = strdup(id);
-	symbol->type = valueType;
+	symbol->type = blank;
 	symbol->value = 0;
 	symbol->hasValue = 0;
 	return symbol;
