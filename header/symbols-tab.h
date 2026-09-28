@@ -8,12 +8,21 @@ typedef struct SymbolTabElem {
 	struct SymbolTabElem *back;
 } SymbolTabElem;
 
-typedef struct SymbolTab {
+typedef struct SymbolTabLevel{
 	struct SymbolTabElem *first;
 	struct SymbolTabElem *last;
+	struct SymbolTabLevel *up;
+	struct SymbolTabLevel *down;
+}SymbolTabLevel;
+
+typedef struct SymbolTab {
+	struct SymbolTabLevel *firstLevel;
+	struct SymbolTabLevel *lastLevel;
 } SymbolTab;
 
 SymbolTab *initializeSymbolTab();
 void addSymbolToTab(Symbol *symbol, SymbolTab *tab);
 Symbol *findSymbol(Symbol *symbol, SymbolTab *tab);
+void openLevel(SymbolTab *tab){}
+void closeLevel(SymbolTab *tab){}
 #endif
