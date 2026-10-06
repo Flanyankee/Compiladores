@@ -21,7 +21,7 @@ void analyze_ast(ASTNode *node, SymbolTab *tab) {
             Symbol *existing = findSymbol(symbol, tab);
                 if (existing != NULL && existing->symbolType == symbol->symbolType) {
                     printf("Error Semántico: La variable '%s' ya fue declarada.\n", symbol->id);
-                } else {
+                } else { //DEJAME PUSHEARRRR AYYYYYY
                     addSymbolToTab(symbol, tab);
                 }
             break;
