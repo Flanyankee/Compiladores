@@ -1,3 +1,5 @@
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
 enum optimizations { none };
 enum compilerStages { scan, parse, codinter, assembly, object };
 enum symbolTypes {
@@ -5,7 +7,9 @@ enum symbolTypes {
 	global_var,
 	local_var,
 	formalParameter,
-
+	program,
+	variable,
+	idList,
 	functionInvoke,
 	actualParameterList,
 	actualParameter,
@@ -31,3 +35,5 @@ enum symbolTypes {
 
 };
 enum types { tInt, tFloat, tBoolean, tVoid, blank };
+
+#endif
