@@ -7,10 +7,12 @@ enum symbolTypes {
 	global_var,
 	local_var,
 	formalParameter,
+
 	program,
 	variable,
 	idList,
 	functionInvoke,
+	formalParameterList,
 	actualParameterList,
 	actualParameter,
 	block,
