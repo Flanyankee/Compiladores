@@ -31,7 +31,8 @@ enum symbolTypes {
 	greaterOp,
 	equalsOp,
 	andOp,
-	orOp
+	orOp,
+	assingOp
 
 };
 enum types { tInt, tFloat, tBoolean, tVoid, blank };
