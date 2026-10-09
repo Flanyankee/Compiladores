@@ -24,6 +24,7 @@ SymbolTab *initializeSymbolTab();
 
 void addSymbolToTab(Symbol *symbol, SymbolTab *tab);
 Symbol *findSymbol(Symbol *symbol, SymbolTab *tab);
+Symbol *findSymbolMultiLevel(Symbol *symbol, SymbolTab *tab);
 
 void openLevel(SymbolTab *tab);
 void closeLevel(SymbolTab *tab);

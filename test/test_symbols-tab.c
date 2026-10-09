@@ -161,3 +161,49 @@ void test_closeLevel_destroys_local_symbols(void) {
     free_test_symbol(s_global);
     free_test_symbol(s_local);
 }
+
+void test_findSymbolMultiLevel(void){
+    SymbolTab* auxTab = initializeSymbolTab();
+    openLevel(auxTab);
+
+    Symbol* simbolY = create_test_symbol("Y");
+    addSymbolToTab(simbolY, auxTab);
+
+    openLevel(auxTab);
+
+    Symbol* simbolX = create_test_symbol("X");
+    addSymbolToTab(simbolX, auxTab);
+
+    findSymbolMultiLevel(simbolY, auxTab);
+
+    TEST_ASSERT_NOT_NULL(findSymbol(simbolX, auxTab));
+
+    closeLevel(auxTab);
+    closeLevel(auxTab);
+    free_test_symbol(simbolX);
+    free_test_symbol(simbolY);
+}
+
+void test_findSymbolMultiLevel_v2(void){
+    SymbolTab* auxTab = initializeSymbolTab();
+    openLevel(auxTab);
+
+    Symbol* simbolY = create_test_symbol("Y");
+    addSymbolToTab(simbolY, auxTab);
+
+    openLevel(auxTab);
+
+    Symbol* simbolX = create_test_symbol("X");
+    addSymbolToTab(simbolX, auxTab);
+
+    SymbolTabElem* lastLevel = auxTab->lastLevel->first;
+
+    findSymbolMultiLevel(simbolY, auxTab);
+
+    TEST_ASSERT_EQUAL(auxTab->lastLevel->first, lastLevel);
+
+    closeLevel(auxTab);
+    closeLevel(auxTab);
+    free_test_symbol(simbolX);
+    free_test_symbol(simbolY);
+}

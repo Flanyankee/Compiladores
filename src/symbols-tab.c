@@ -41,6 +41,25 @@ Symbol *findSymbol(Symbol *symbol, SymbolTab *tab) {
 	return NULL;
 }
 
+Symbol *findSymbolMultiLevel(Symbol *symbol, SymbolTab *tab){
+	Symbol *isFound = findSymbol(symbol, tab);
+	SymbolTab *tabAux = malloc(sizeof(SymbolTab));
+	memcpy(tabAux, tab, sizeof(SymbolTab));
+
+	if(isFound != NULL)
+		return isFound;
+
+	if((tab->lastLevel)->down == tab->firstLevel){
+        return NULL;
+    }
+
+	(tabAux->lastLevel) = (tabAux->lastLevel)->down;
+	Symbol *res = findSymbolMultiLevel(symbol, tabAux);
+
+	free(tabAux);
+	return res;
+}
+
 void openLevel(SymbolTab *tab){
     SymbolTabLevel *level = (SymbolTabLevel *) malloc(sizeof(SymbolTabLevel));
     level->first = (SymbolTabElem *) malloc(sizeof(SymbolTabElem));

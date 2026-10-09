@@ -7,7 +7,7 @@ enum symbolTypes {
 	global_var,
 	local_var,
 	formalParameter,
-
+	constant,
 	program,
 	variable,
 	idList,
@@ -24,6 +24,7 @@ enum symbolTypes {
 	varDeclaration,
 	methodDeclarationList,
 	methodDeclaration,
+	methodCall,
 	addOp,
 	substractOp,
 	multOp,
