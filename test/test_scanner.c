@@ -1,4 +1,5 @@
 #include "parser.tab.h"
+#include "syntax-tree.h"
 #include "unity.h"
 
 TEST_SOURCE_FILE("lex.yy.c")
@@ -47,9 +48,9 @@ void test_boolean_scanner(void) {
 }
 
 void test_pattern_scanner(void) {
-	probar_token("a", ALPHA);
-	probar_token("Z", ALPHA);
-	probar_token("5", DIGIT);
+	probar_token("a", ID);
+	probar_token("Z", ID);
+	probar_token("5", INT);
 }
 
 void test_operator_scanner(void) {

@@ -12,25 +12,26 @@ extern FILE *outputFilePtr;
 
 TYPE ("int"|"boolean"|"float")
 VOID "void"
-DIGIT [0-9]
+INT [0-9]+
+FLOAT [0-9]+"."[0-9]+
 BOOL ("true"|"false")
-ALPHA ([a-z]|[A-Z])
 IF "if"
 ELSE "else"
 WHILE "while"
 RETURN "return"
+ID [a-zA-Z][a-zA-Z0-9_]*
 
 %%
 
-{TYPE} {return TYPE;}
+{TYPE} {yylval.str = strdup(yytext); return TYPE;}
 {VOID} {return VOID;}
 {IF} {return IF;}
 {ELSE} {return ELSE;}
 {WHILE} {return WHILE;}
 {RETURN} {return RETURN;}
-{BOOL} {return BOOL;}
-{DIGIT} {return DIGIT;}
-{ALPHA} {return ALPHA;}
+{BOOL} {yylval.str = strdup(yytext); return BOOL;}
+{FLOAT} {yylval.str = strdup(yytext); return FLOAT;}
+{INT} {yylval.str = strdup(yytext); return INT;}
 
 "&&" {return AND_OP;}
 "||" {return OR_OP;}
@@ -70,6 +71,7 @@ RETURN "return"
                      BEGIN(INITIAL); 
                    }
 
+{ID} {yylval.str = strdup(yytext); return ID;}
 
 . {if (outputFilePtr) { 
 	fprintf(outputFilePtr, "Error lexico: Caracter %s no reconocido en la linea %d\n", yytext, yylineno);

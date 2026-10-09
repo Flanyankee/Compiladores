@@ -1,5 +1,6 @@
 #include "lex.yy.c"
 #include "parser.tab.h"
+#include "syntax-tree.h"
 #include "unity.h"
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;

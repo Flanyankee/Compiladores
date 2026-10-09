@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+char *declType;
+ASTNode *syntaxTree;
+
 ASTNode *makeNode(Symbol *symbol, ASTNode *left, ASTNode *right) {
 	ASTNode *node = (ASTNode *)malloc(sizeof(ASTNode));
 	node->symbolData = symbol;
@@ -17,7 +20,7 @@ Symbol *makeSymbol(char *id, enum symbolTypes symType) {
 	symbol->symbolType = symType;
 	symbol->id = strdup(id);
 	symbol->type = blank;
-	symbol->value = 0;
+	symbol->value.intValue = 0;
 	symbol->hasValue = 0;
 	return symbol;
 }

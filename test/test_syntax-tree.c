@@ -19,7 +19,7 @@ void test_make_symbol() {
 
 	TEST_ASSERT_EQUAL(block, symbol->symbolType);
 	TEST_ASSERT_EQUAL(blank, symbol->type);
-	TEST_ASSERT_EQUAL(0, symbol->value);
+	TEST_ASSERT_EQUAL(0, symbol->value.intValue);
 	TEST_ASSERT_EQUAL(0, symbol->hasValue);
 	TEST_ASSERT_EQUAL_STRING("test", symbol->id);
 }

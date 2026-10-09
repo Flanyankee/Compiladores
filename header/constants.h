@@ -7,8 +7,10 @@ enum symbolTypes {
 	global_var,
 	local_var,
 	formalParameter,
-	constant,
+
 	program,
+	constant, // despues hay que ver si borramos constant o borramos los
+	          // literals de abajo.
 	variable,
 	idList,
 	functionInvoke,
@@ -16,15 +18,16 @@ enum symbolTypes {
 	actualParameterList,
 	actualParameter,
 	block,
+	statementList,
 	ifNode,
 	elseNode,
 	whileNode,
 	returnNode,
+
 	varDeclarationList,
 	varDeclaration,
 	methodDeclarationList,
 	methodDeclaration,
-	methodCall,
 	addOp,
 	substractOp,
 	multOp,
@@ -35,8 +38,14 @@ enum symbolTypes {
 	equalsOp,
 	andOp,
 	orOp,
-	assingOp
+	negationOp,
+	assignOp,
 
+	intLiteral,
+	boolLiteral,
+	floatLiteral,
+
+	blankNode
 };
 enum types { tInt, tFloat, tBoolean, tVoid, blank };
 
