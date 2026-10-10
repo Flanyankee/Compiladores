@@ -79,18 +79,19 @@ int returnDebugFlag() {
 }
 
 char *returnOutputFile() {
-	char *nameCopy = (char *)malloc(sizeof(char));
 	if (outputFile) {
+		char *nameCopy = (char *)malloc(strlen(outputFile) + 1);
 		strcpy(nameCopy, outputFile);
 		return nameCopy;
 	} else {
+		char *nameCopy = (char *)malloc(strlen("outputFile") + 1);
 		strcpy(nameCopy, "outputFile");
 		return nameCopy;
 	}
 }
 
 char *returnSourceFile() {
-	char *nameCopy = (char *)malloc(sizeof(char));
+	char *nameCopy = (char *)malloc(strlen(sourceFile) + 1);
 	strcpy(nameCopy, sourceFile);
 	return nameCopy;
 }
