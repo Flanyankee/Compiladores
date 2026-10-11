@@ -13,20 +13,12 @@ void analyze_ast(ASTNode *node, SymbolTab *tab) {
     Symbol* symbol = node->symbolData;
 
     switch (symbol->symbolType) {
-        case program:
-        case methodDeclarationList:
-        case varDeclarationList:
-        case statementList:
-            // Nodos puramente estructurales que bajan por el árbol
-            analyze_ast(node->left, tab);
-            analyze_ast(node->right, tab);
-            break;
 
         case varDeclaration: {
-            // El hijo izquierdo es un idList con las variables declaradas
-            ASTNode *currentIdList = node->left;
-            while (currentIdList != NULL && currentIdList->symbolData->symbolType == idList) {
-                ASTNode *varNode = currentIdList->left;
+
+            ASTNode *currentVar = node->left;
+            while (currentVar != NULL && currentVar->symbolData->symbolType == variable) {
+                ASTNode *varNode = currentVar->left;
                 if (varNode != NULL && varNode->symbolData->symbolType == variable) {
                     Symbol *sym = varNode->symbolData;
                     
@@ -42,7 +34,7 @@ void analyze_ast(ASTNode *node, SymbolTab *tab) {
                     }
                     addSymbolToTab(sym, tab);
                 }
-                currentIdList = currentIdList->right; // Avanzar en la lista
+                currentVar = currentVar->right;
             }
             break;
         }

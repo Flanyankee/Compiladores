@@ -72,7 +72,7 @@ void test_analyze_ast_varDeclaration_global(void) {
     sym_var->type = tInt;
     ASTNode *varNode = makeLeaf(sym_var);
 
-    Symbol *sym_list = makeSymbol("list", idList);
+    Symbol *sym_list = makeSymbol("list", variable);
     ASTNode *listNode = makeNode(sym_list, varNode, NULL);
 
     Symbol *sym_decl = makeSymbol("decl", varDeclaration);

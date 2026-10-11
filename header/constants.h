@@ -12,7 +12,6 @@ enum symbolTypes {
 	constant, // despues hay que ver si borramos constant o borramos los
 	          // literals de abajo.
 	variable,
-	idList,
 	functionInvoke,
 	formalParameterList,
 	actualParameterList,
