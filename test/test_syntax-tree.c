@@ -1,47 +1,64 @@
+#include "constants.h"
+#include "lex.yy.c"
+#include "parser.tab.h"
 #include "syntax-tree.h"
 #include "unity.h"
 #include <stdlib.h>
+
+typedef struct yy_buffer_state *YY_BUFFER_STATE;
+extern YY_BUFFER_STATE yy_scan_string(const char *str);
+extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
+extern int yyparse(void);
+
+FILE *outputFilePtr = NULL;
 
 void setUp(void) {}
 
 void tearDown(void) {}
 
+static int parse_string(const char *input) {
+	YY_BUFFER_STATE buffer = yy_scan_string(input);
+	int result = yyparse();
+	yy_delete_buffer(buffer);
+	return result;
+}
+
 void test_empty_tree(void) {
-	ASTNode *tree = (ASTNode *)malloc(sizeof(ASTNode));
-
-	TEST_ASSERT_NULL(tree->left);
-	TEST_ASSERT_NULL(tree->right);
-	TEST_ASSERT_NULL(tree->symbolData);
+	const char *code = "";
+	int result = parse_string(code);
+	TEST_ASSERT_EQUAL(0, result);
+	TEST_ASSERT_EQUAL(program, (syntaxTree->symbolData)->symbolType);
 }
 
-void test_make_symbol() {
-	Symbol *symbol = makeSymbol("test", block);
+void test_var_declaration() {
+	const char *code = "int x, y; float r, s;";
+	int result = parse_string(code);
+	TEST_ASSERT_EQUAL(0, result);
 
-	TEST_ASSERT_EQUAL(block, symbol->symbolType);
-	TEST_ASSERT_EQUAL(blank, symbol->type);
-	TEST_ASSERT_EQUAL(0, symbol->value.intValue);
-	TEST_ASSERT_EQUAL(0, symbol->hasValue);
-	TEST_ASSERT_EQUAL_STRING("test", symbol->id);
-}
+	ASTNode *varDeclarationListNode = syntaxTree->left;
 
-void test_more_complex_tree() {
-	ASTNode *tree = (ASTNode *)malloc(sizeof(ASTNode));
-	ASTNode *leftSon = makeLeaf(makeSymbol("test1", block));
-	ASTNode *leftSonSubtree = makeLeaf(makeSymbol("test2", actualParameter));
-	ASTNode *subtree =
-	    makeNode(makeSymbol("test_subree", ifNode), leftSonSubtree, NULL);
+	ASTNode *intVarDeclarationNode = (varDeclarationListNode->left)->right;
+	ASTNode *xNode = (intVarDeclarationNode)->left;
+	ASTNode *yNode = ((intVarDeclarationNode)->right)->left;
 
-	tree->left = leftSon;
-	tree->right = subtree;
-	subtree->left = leftSonSubtree;
+	ASTNode *floatVarDeclarationNode = varDeclarationListNode->right;
+	ASTNode *rNode = (floatVarDeclarationNode)->left;
+	ASTNode *sNode = ((floatVarDeclarationNode)->right)->left;
 
-	TEST_ASSERT_EQUAL(subtree, tree->right);
-	TEST_ASSERT_EQUAL(leftSonSubtree, (tree->right)->left);
-	TEST_ASSERT_NOT_NULL((tree->right)->left);
-	TEST_ASSERT_NULL((tree->right)->right);
-	TEST_ASSERT_EQUAL(leftSonSubtree->symbolData,
-	                  ((tree->right)->left)->symbolData);
+	TEST_ASSERT_EQUAL(varDeclarationList,
+	                  (varDeclarationListNode->symbolData)->symbolType);
+	TEST_ASSERT_EQUAL(varDeclaration,
+	                  (intVarDeclarationNode->symbolData)->symbolType);
+	TEST_ASSERT_EQUAL(varDeclaration,
+	                  (floatVarDeclarationNode->symbolData)->symbolType);
 
-	TEST_ASSERT_NULL((tree->left)->left);
-	TEST_ASSERT_NULL((tree->left)->right);
+	TEST_ASSERT_EQUAL(variable, (xNode->symbolData)->symbolType);
+	TEST_ASSERT_EQUAL(tInt, (xNode->symbolData)->type);
+	TEST_ASSERT_EQUAL(variable, (yNode->symbolData)->symbolType);
+	TEST_ASSERT_EQUAL(tInt, (yNode->symbolData)->type);
+
+	TEST_ASSERT_EQUAL(variable, (rNode->symbolData)->symbolType);
+	TEST_ASSERT_EQUAL(tFloat, (rNode->symbolData)->type);
+	TEST_ASSERT_EQUAL(variable, (sNode->symbolData)->symbolType);
+	TEST_ASSERT_EQUAL(tFloat, (sNode->symbolData)->type);
 }

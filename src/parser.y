@@ -42,7 +42,7 @@ program : v_d m_d {
 
 v_d : v_d var_decl {
 		Symbol* symbol = makeSymbol("", varDeclarationList);
-		ASTNode* vd = makeNode(symbol, $2, $1);
+		ASTNode* vd = makeNode(symbol, $1, $2);
 		$$ = vd;
     		}
     | { $$ = NULL; }
@@ -50,7 +50,6 @@ v_d : v_d var_decl {
 
 var_decl : TYPE ID {declType = $1;} id_prime SEMICOLON {
 		Symbol* varDeclSym = makeSymbol("", varDeclaration);
-		Symbol* idPrime = makeSymbol("", idList);
 		Symbol* id = makeSymbol($2, variable);
 
 		if (strcmp($1, "int") == 0) {
@@ -61,18 +60,16 @@ var_decl : TYPE ID {declType = $1;} id_prime SEMICOLON {
 			varDeclSym->type = tFloat;
 		}
 		
-		idPrime->type = varDeclSym->type;
 		id->type = varDeclSym->type;
 
 		ASTNode* idTreeNode = makeLeaf(id);
-		ASTNode* idListNode = makeNode(idPrime, idTreeNode, $4);
-		ASTNode* varDeclNode = makeNode(varDeclSym, idListNode, NULL);
+		ASTNode* varDeclNode = makeNode(varDeclSym, idTreeNode, $4);
 		$$ = varDeclNode;
 		}
          ;
 
 id_prime : COMMA ID id_prime { 
-		Symbol* idPrime = makeSymbol("", idList);
+		Symbol* varDeclSym = makeSymbol("", varDeclaration);
 		Symbol* id = makeSymbol($2, variable);
 
 		if (strcmp(declType, "int") == 0) {
@@ -84,7 +81,7 @@ id_prime : COMMA ID id_prime {
 		}
 
 		ASTNode* idTreeNode = makeLeaf(id);
-		ASTNode* idListNode = makeNode(idPrime, idTreeNode, $3);
+		ASTNode* idListNode = makeNode(varDeclSym, idTreeNode, $3);
 		$$ = idListNode;
 	 }
          | {$$ = NULL;}
