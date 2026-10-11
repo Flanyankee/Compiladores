@@ -4,6 +4,7 @@
 #include "syntax-tree.h"
 #include "unity.h"
 #include <stdlib.h>
+#include <unistd.h>
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 extern YY_BUFFER_STATE yy_scan_string(const char *str);
@@ -39,10 +40,8 @@ void test_var_declaration() {
 
 	ASTNode *intVarDeclarationNode = (varDeclarationListNode->left)->right;
 	ASTNode *xNode = (intVarDeclarationNode)->left;
-	ASTNode *yNode = ((intVarDeclarationNode)->right)->left;
 
 	ASTNode *floatVarDeclarationNode = varDeclarationListNode->right;
-	ASTNode *rNode = (floatVarDeclarationNode)->left;
 	ASTNode *sNode = ((floatVarDeclarationNode)->right)->left;
 
 	TEST_ASSERT_EQUAL(varDeclarationList,
@@ -54,11 +53,50 @@ void test_var_declaration() {
 
 	TEST_ASSERT_EQUAL(variable, (xNode->symbolData)->symbolType);
 	TEST_ASSERT_EQUAL(tInt, (xNode->symbolData)->type);
-	TEST_ASSERT_EQUAL(variable, (yNode->symbolData)->symbolType);
-	TEST_ASSERT_EQUAL(tInt, (yNode->symbolData)->type);
+	TEST_ASSERT_EQUAL_STRING("x", (xNode->symbolData)->id);
+	TEST_ASSERT_EQUAL(0, (xNode->symbolData)->hasValue);
 
-	TEST_ASSERT_EQUAL(variable, (rNode->symbolData)->symbolType);
-	TEST_ASSERT_EQUAL(tFloat, (rNode->symbolData)->type);
 	TEST_ASSERT_EQUAL(variable, (sNode->symbolData)->symbolType);
 	TEST_ASSERT_EQUAL(tFloat, (sNode->symbolData)->type);
+}
+
+void test_method_declaration() {
+	const char *code = "void main(int x2, int x3) {int x;}";
+	int result = parse_string(code);
+	TEST_ASSERT_EQUAL(0, result);
+
+	ASTNode *methodDeclarationNode = (syntaxTree->right)->left;
+	ASTNode *parametersListNode = (methodDeclarationNode->left);
+	ASTNode *blockNode = (methodDeclarationNode->right);
+
+	TEST_ASSERT_EQUAL(function,
+	                  (methodDeclarationNode->symbolData)->symbolType);
+	TEST_ASSERT_EQUAL(tVoid, (methodDeclarationNode->symbolData)->type);
+	TEST_ASSERT_EQUAL_STRING("main", (methodDeclarationNode->symbolData)->id);
+
+	TEST_ASSERT_EQUAL(formalParameterList,
+	                  (parametersListNode->symbolData)->symbolType);
+	TEST_ASSERT_EQUAL(block, (blockNode->symbolData)->symbolType);
+
+	ASTNode *x3Node = ((parametersListNode->right)->left);
+	TEST_ASSERT_EQUAL(formalParameter, (x3Node->symbolData)->symbolType);
+	TEST_ASSERT_EQUAL(tInt, (x3Node->symbolData)->type);
+	TEST_ASSERT_EQUAL_STRING("x3", (x3Node->symbolData)->id);
+	TEST_ASSERT_EQUAL(0, (x3Node->symbolData)->hasValue);
+}
+
+void test_statement_assign() {
+	const char *code = "void main(int x2, int x3) {x2 = 1.5;}";
+	int result = parse_string(code);
+	TEST_ASSERT_EQUAL(0, result);
+
+	ASTNode *methodDeclarationNode = (syntaxTree->right)->left;
+	ASTNode *blockNode = (methodDeclarationNode->right);
+	ASTNode *assignNode = (blockNode->right)->left;
+
+	TEST_ASSERT_EQUAL(assignOp, (assignNode->symbolData)->symbolType);
+
+	ASTNode *idAssign = assignNode->left, *exprAssing = assignNode->right;
+	TEST_ASSERT_EQUAL_STRING("x2", (idAssign->symbolData)->id);
+	TEST_ASSERT_EQUAL(floatLiteral, (exprAssing->symbolData)->symbolType);
 }

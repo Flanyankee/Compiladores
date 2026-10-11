@@ -152,6 +152,7 @@ t_i_2 : COMMA TYPE ID t_i_2 {
 
 	ASTNode* formalParameterNode = makeLeaf(parameterSym);
 	ASTNode* parameterListNode = makeNode(parameterListSym, formalParameterNode, $4);
+	$$ = parameterListNode;
 	}
       | {$$ = NULL;}
       ;
@@ -185,6 +186,15 @@ block : LEFT_BRACE v_d stat RIGHT_BRACE {
       $$ = blockTreeNode;
       }
       ;
+
+stat : statement stat {
+     Symbol* statementListSym = makeSymbol("", statementList);
+     ASTNode* statementNode = makeNode(statementListSym, $1, $2);
+     $$ = statementNode;
+     }
+     | {$$ = NULL;}
+     ;
+
 
 statement : ID ASIGN_OP expr SEMICOLON {
 		Symbol* assignSymbol = makeSymbol("", assignOp);
@@ -225,14 +235,6 @@ else : ELSE block {
 	Symbol* elseSymbol = makeSymbol("", elseNode);
 	ASTNode* elseTreeNode = makeNode(elseSymbol, $2, NULL);
 	$$ = elseTreeNode;
-     }
-     | {$$ = NULL;}
-     ;
-
-stat : statement stat {
-     Symbol* statementListSym = makeSymbol("", statementList);
-     ASTNode* statementNode = makeNode(statementListSym, $1, $2);
-     $$ = statementNode;
      }
      | {$$ = NULL;}
      ;
