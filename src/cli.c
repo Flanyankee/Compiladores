@@ -56,13 +56,15 @@ int returnOptimization() {
 
 int returnTargetStage() {
 	if (!targetStage) {
-		return parse;
+		return semantic;
 	}
 
 	if (strcmp(targetStage, "scan") == 0) {
 		return scan;
 	} else if (strcmp(targetStage, "parse") == 0) {
 		return parse;
+	} else if (strcmp(targetStage, "semantic") == 0) {
+		return semantic;
 	} else if (strcmp(targetStage, "codinter") == 0) {
 		return codinter;
 	} else {
@@ -108,6 +110,9 @@ void printHelp() {
 	printf("\t\t\tscan\t\t Generates a scanner whose filename ends in .lex\n");
 	printf("\t\t\tparse\t\t Generates a parser whose filename ends in .<falta "
 	       "completar>\n");
+	printf(
+	    "\t\t\tsemantic\t\t Generates a semantic analyzer whose filename ends "
+	    "in .sem\n");
 	printf("\t\t\tcodinter\t Generates an interpreter whose filename ends in "
 	       ".<falta completar>\n");
 	printf("\t\t\tassembly\t Generates assembly code whose filename ends in "

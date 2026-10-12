@@ -10,10 +10,12 @@
 void manageCompilation();
 
 void executeStage(int targetStage);
+void makeOutputFile(int targetStage);
 void applyOptimization(int optimizationLevel);
 
 void scannerStage();
 void parseStage();
+void semanticStage();
 void codinterStage();
 void assemblyStage();
 void objectStage();

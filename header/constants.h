@@ -1,7 +1,7 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 enum optimizations { none };
-enum compilerStages { scan, parse, codinter, assembly, object };
+enum compilerStages { scan, parse, semantic, codinter, assembly, object };
 enum symbolTypes {
 	function,
 	global_var,
