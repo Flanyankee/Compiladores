@@ -6,7 +6,7 @@
 #include "syntax-tree.h"
 
 // Función principal para iniciar el análisis semántico
-void analyzeAst(ASTNode *node, SymbolTab *tab);
+int analyzeAst(ASTNode *node, SymbolTab *tab);
 
 // Función auxiliar para evaluar expresiones y retornar su tipo
 enum types analyzeExpression(ASTNode *expr, SymbolTab *tab);

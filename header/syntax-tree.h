@@ -12,6 +12,8 @@ typedef struct Symbol {
 		float floatValue;
 	} value;
 	int hasValue;
+
+	struct ASTNode *paramsNode;
 } Symbol;
 
 typedef struct ASTNode {
