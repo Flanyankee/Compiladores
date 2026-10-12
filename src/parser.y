@@ -324,6 +324,7 @@ cond_op : expr AND_OP expr {
 literal : INT {
 		Symbol* intSymbol = makeSymbol("", intLiteral);
 		int value = atoi($1);
+		intSymbol->type = tInt;
 		intSymbol->value.intValue = value;
 		intSymbol->hasValue = 1;
 		ASTNode* intNode = makeLeaf(intSymbol);
@@ -331,6 +332,7 @@ literal : INT {
 	}
         | BOOL {
 		Symbol* boolSymbol = makeSymbol("", boolLiteral);
+		boolSymbol->type = tBoolean;
 
 		if (strcmp("true", $1) == 0) {
 			boolSymbol->value.boolValue = 1;
@@ -344,6 +346,7 @@ literal : INT {
 	}
         | FLOAT {
 		Symbol* floatSymbol = makeSymbol("", floatLiteral);
+		floatSymbol->type = tFloat;
 		int value = atof($1);
 		floatSymbol->value.floatValue = value;
 		floatSymbol->hasValue = 1;

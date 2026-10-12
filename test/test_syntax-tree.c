@@ -100,3 +100,65 @@ void test_statement_assign() {
 	TEST_ASSERT_EQUAL_STRING("x2", (idAssign->symbolData)->id);
 	TEST_ASSERT_EQUAL(floatLiteral, (exprAssing->symbolData)->symbolType);
 }
+
+void test_method_call() {
+	const char *code = "void main() {test(x1);}";
+	int result = parse_string(code);
+	TEST_ASSERT_EQUAL(0, result);
+
+	ASTNode *blockNode = ((syntaxTree->right)->left)->right;
+	ASTNode *methodCallNode = (blockNode->right)->left;
+	ASTNode *methodCallParams = methodCallNode->left;
+
+	TEST_ASSERT_EQUAL(functionInvoke, (methodCallNode->symbolData)->symbolType);
+	TEST_ASSERT_EQUAL_STRING("test", (methodCallNode->symbolData)->id);
+	TEST_ASSERT_EQUAL(blank, (methodCallNode->symbolData)->type);
+
+	TEST_ASSERT_EQUAL(variable,
+	                  ((methodCallParams->left)->symbolData)->symbolType);
+}
+
+void test_if_else() {
+	const char *code = "void main() {if (true) {return;} else {return 1;}}";
+	int result = parse_string(code);
+	TEST_ASSERT_EQUAL(0, result);
+
+	ASTNode *blockNode = ((syntaxTree->right)->left)->right;
+	ASTNode *ifNodeTree = (blockNode->right)->left;
+	ASTNode *ifCondition = ifNodeTree->left;
+	ASTNode *ifBlock = (((ifNodeTree->right)->left)->right)->left;
+	ASTNode *elseTreeNode = (ifNodeTree->right)->right;
+	ASTNode *elseBlock = ((elseTreeNode->left)->right)->left;
+
+	// Info almacenada en la condicion del if
+	TEST_ASSERT_EQUAL(ifNode, (ifNodeTree->symbolData)->symbolType);
+	TEST_ASSERT_EQUAL(boolLiteral, (ifCondition->symbolData)->symbolType);
+
+	// Info almacenada en el bloque del if
+	TEST_ASSERT_EQUAL(returnNode, (ifBlock->symbolData)->symbolType);
+	TEST_ASSERT_EQUAL_STRING("return", (ifBlock->symbolData)->id);
+	TEST_ASSERT_EQUAL(tVoid, (ifBlock->symbolData)->type);
+
+	// Info almacenada en el bloque del else
+	TEST_ASSERT_EQUAL(elseNode, (elseTreeNode->symbolData)->symbolType);
+	TEST_ASSERT_EQUAL(returnNode, (elseBlock->symbolData)->symbolType);
+	TEST_ASSERT_EQUAL_STRING("return", (elseBlock->symbolData)->id);
+	TEST_ASSERT_EQUAL(intLiteral, ((elseBlock->left)->symbolData)->symbolType);
+	TEST_ASSERT_EQUAL(tInt, ((elseBlock->left)->symbolData)->type);
+	TEST_ASSERT_EQUAL(1, ((elseBlock->left)->symbolData)->value.intValue);
+}
+
+void test_while() {
+	const char *code = "void main() {while (x > 2) {x = x+1;}}";
+	int result = parse_string(code);
+	TEST_ASSERT_EQUAL(0, result);
+
+	ASTNode *blockNode = ((syntaxTree->right)->left)->right;
+	ASTNode *whileNodeTree = (blockNode->right)->left;
+	ASTNode *whileCondition = whileNodeTree->left;
+	ASTNode *whileBlock = ((whileNodeTree->right)->right)->left;
+
+	TEST_ASSERT_EQUAL(whileNode, (whileNodeTree->symbolData)->symbolType);
+	TEST_ASSERT_EQUAL(greaterOp, (whileCondition->symbolData)->symbolType);
+	TEST_ASSERT_EQUAL(assignOp, (whileBlock->symbolData)->symbolType);
+}
