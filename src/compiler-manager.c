@@ -115,6 +115,7 @@ void parseStage() {
 void semanticStage() {
 	yyin = source;
 	yyparse();
+	semanticOutputFile = outputFilePtr;
 	/*
 	if (analyzeAst(syntaxTree, symbolsTab?) == 0) {
 	    fprintf(outputFilePtr, "Cadena aceptada. No se encontraron errores

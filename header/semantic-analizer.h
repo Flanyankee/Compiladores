@@ -4,6 +4,9 @@
 #include "constants.h"
 #include "symbols-tab.h"
 #include "syntax-tree.h"
+#include <stdio.h>
+
+extern FILE *semanticOutputFile;
 
 // Función principal para iniciar el análisis semántico
 int analyzeAst(ASTNode *node, SymbolTab *tab);
