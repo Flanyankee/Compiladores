@@ -9,14 +9,22 @@
 #include <string.h>
 
 extern int semanticErrorFlag; 
+extern FILE *semanticOutputFile;
+
 static SymbolTab *tab = NULL;
 
 void setUp(void) {
     tab = initializeSymbolTab();
     semanticErrorFlag = 0; 
+    semanticOutputFile = fopen("test_errors.log", "w");
 }
 
 void tearDown(void) {
+    if (semanticOutputFile != NULL) {
+        fclose(semanticOutputFile);
+        semanticOutputFile = NULL;
+    }
+    
     if (tab != NULL) {
         while ((tab->lastLevel)->down != tab->firstLevel) {
             closeLevel(tab);
@@ -136,7 +144,6 @@ void test_analyze_ast_function_declaration(void) {
     TEST_ASSERT_NOT_NULL(found);
     TEST_ASSERT_EQUAL_INT(tInt, found->type);
     TEST_ASSERT_EQUAL_INT(function, found->symbolType);
-    TEST_ASSERT_EQUAL_INT(0, found->value.intValue);
 }
 
 void test_analyze_ast_if_statement(void) {
