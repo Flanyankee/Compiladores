@@ -14,4 +14,6 @@ int analyzeAst(ASTNode *node, SymbolTab *tab);
 // Función auxiliar para evaluar expresiones y retornar su tipo
 enum types analyzeExpression(ASTNode *expr, SymbolTab *tab);
 
+static enum types evaluateFunctionInvoke(ASTNode *expr, SymbolTab *tab, int isExpression);
+
 #endif // SEMANTIC_ANALIZER

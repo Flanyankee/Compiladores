@@ -392,4 +392,144 @@ void test_analyze_ast_function_call_wrong_args_count(void) {
     int result = analyzeAst(n_prog, tab);
     TEST_ASSERT_EQUAL_INT(1, result);
 }
+
+void test_analyze_ast_valid_float_assignment(void) {
+    openLevel(tab);
+    
+    Symbol *sym_decl = makeSymbol("pi", variable);
+    sym_decl->type = tFloat;
+    addSymbolToTab(sym_decl, tab);
+
+    Symbol *sym_pi = makeSymbol("pi", variable);
+    ASTNode *node_pi = makeLeaf(sym_pi);
+
+    Symbol *sym_val = makeSymbol("3.14", floatLiteral);
+    sym_val->type = tFloat;
+    ASTNode *node_val = makeLeaf(sym_val);
+
+    Symbol *sym_assign = makeSymbol("=", assignOp);
+    ASTNode *node_assign = makeNode(sym_assign, node_pi, node_val);
+
+    int result = analyzeAst(node_assign, tab);
+    
+    TEST_ASSERT_EQUAL_INT(0, result);
+}
+
+void test_analyze_ast_invalid_assignment_bool_to_int(void) {
+    openLevel(tab);
+    
+    Symbol *sym_decl = makeSymbol("contador", variable);
+    sym_decl->type = tInt;
+    addSymbolToTab(sym_decl, tab);
+
+    Symbol *sym_cont = makeSymbol("contador", variable);
+    ASTNode *node_cont = makeLeaf(sym_cont);
+
+    Symbol *sym_true = makeSymbol("true", boolLiteral);
+    sym_true->type = tBoolean;
+    ASTNode *node_true = makeLeaf(sym_true);
+
+    Symbol *sym_assign = makeSymbol("=", assignOp);
+    ASTNode *node_assign = makeNode(sym_assign, node_cont, node_true);
+
+    int result = analyzeAst(node_assign, tab);
+    
+    TEST_ASSERT_EQUAL_INT(1, result);
+}
+
+void test_analyze_ast_return_value_in_void_method_fails(void) {
+    openLevel(tab);
+
+    Symbol *sym_5 = makeSymbol("5", intLiteral);
+    sym_5->type = tInt;
+    ASTNode *node_5 = makeLeaf(sym_5);
+
+    Symbol *sym_ret = makeSymbol("return", returnNode);
+    ASTNode *node_ret = makeNode(sym_ret, node_5, NULL);
+
+    Symbol *sym_block = makeSymbol("block", block);
+    ASTNode *node_block = makeNode(sym_block, node_ret, NULL);
+    Symbol *sym_func = makeSymbol("test", function);
+    sym_func->type = tVoid;
+    ASTNode *node_func = makeNode(sym_func, NULL, node_block);
+
+    int result = analyzeAst(node_func, tab);
+    TEST_ASSERT_EQUAL_INT(1, result);
+}
+
+void test_analyze_ast_empty_return_in_int_method_fails(void) {
+    openLevel(tab);
+
+    Symbol *sym_ret = makeSymbol("return", returnNode);
+    ASTNode *node_ret = makeNode(sym_ret, NULL, NULL);
+
+    Symbol *sym_block = makeSymbol("block", block);
+    ASTNode *node_block = makeNode(sym_block, node_ret, NULL);
+
+    Symbol *sym_func = makeSymbol("getNum", function);
+    sym_func->type = tInt;
+    ASTNode *node_func = makeNode(sym_func, NULL, node_block);
+
+    int result = analyzeAst(node_func, tab);
+    TEST_ASSERT_EQUAL_INT(1, result);
+}
+
+void test_analyze_ast_empty_return_in_void_method_passes(void) {
+    openLevel(tab);
+
+    Symbol *sym_ret = makeSymbol("return", returnNode);
+    ASTNode *node_ret = makeNode(sym_ret, NULL, NULL);
+
+    Symbol *sym_block = makeSymbol("block", block);
+    ASTNode *node_block = makeNode(sym_block, node_ret, NULL);
+
+    Symbol *sym_func = makeSymbol("test", function);
+    sym_func->type = tVoid;
+    ASTNode *node_func = makeNode(sym_func, NULL, node_block);
+
+    int result = analyzeAst(node_func, tab);
+    TEST_ASSERT_EQUAL_INT(0, result);
+}
+
+void test_analyze_ast_return_type_mismatch_fails(void) {
+    openLevel(tab);
+
+    Symbol *sym_true = makeSymbol("true", boolLiteral);
+    sym_true->type = tBoolean;
+    ASTNode *node_true = makeLeaf(sym_true);
+
+    Symbol *sym_ret = makeSymbol("return", returnNode);
+    ASTNode *node_ret = makeNode(sym_ret, node_true, NULL);
+
+    Symbol *sym_block = makeSymbol("block", block);
+    ASTNode *node_block = makeNode(sym_block, node_ret, NULL);
+
+    Symbol *sym_func = makeSymbol("testFunc", function);
+    sym_func->type = tInt; 
+    ASTNode *node_func = makeNode(sym_func, NULL, node_block);
+
+    int result = analyzeAst(node_func, tab);
+    TEST_ASSERT_EQUAL_INT(1, result);
+}
+
+void test_analyze_ast_return_type_match_passes(void) {
+    openLevel(tab);
+
+    Symbol *sym_10 = makeSymbol("10", intLiteral);
+    sym_10->type = tInt;
+    ASTNode *node_10 = makeLeaf(sym_10);
+
+    Symbol *sym_ret = makeSymbol("return", returnNode);
+    ASTNode *node_ret = makeNode(sym_ret, node_10, NULL);
+
+    Symbol *sym_block = makeSymbol("block", block);
+    ASTNode *node_block = makeNode(sym_block, node_ret, NULL);
+
+    Symbol *sym_func = makeSymbol("testFunc", function);
+    sym_func->type = tInt; 
+    ASTNode *node_func = makeNode(sym_func, NULL, node_block);
+
+    int result = analyzeAst(node_func, tab);
+    TEST_ASSERT_EQUAL_INT(0, result);
+}
 #endif
