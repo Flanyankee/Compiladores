@@ -1,0 +1,117 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[a4paper, margin=2cm]{geometry}
+\usepackage{fontspec}
+\usepackage[spanish, bidi=basic, provide=*]{babel}
+\babelprovide[import, onchar=ids fonts]{spanish}
+\babelfont{rm}{Noto Sans}
+\usepackage{enumitem}
+\setlist[itemize]{label=-}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\definecolor{primary}{RGB}{44, 62, 80}
+
+\begin{document}
+
+\begin{center}
+    {\LARGE \textbf{\textcolor{primary}{Documentación del Proyecto Compilador}}} \\
+    \vspace{0.5cm}
+    {\large \textbf{Etapa 3:} Analizador Semántico (Chequeo de Tipos, Ámbitos e Integración)}
+\end{center}
+\vspace{0.8cm}
+
+\section{1. División del Trabajo}
+El desarrollo de la tercera etapa del compilador, centrada en la implementación completa del Analizador Semántico y su integración con el Árbol de Sintaxis Abstracta (AST), la Tabla de Símbolos (TS) y el gestor de compilación, se realizó de manera colaborativa distribuyendo las responsabilidades de la siguiente forma:
+
+\begin{itemize}
+    \item \textbf{Diseño e implementación del Analizador Semántico (\texttt{semantic-analizer.c/.h}):} Gribaudo Re Francisco y Francisco Andreani.
+    \item \textbf{Integración con el Parser, AST y Tabla de Símbolos (\texttt{parser.y}, \texttt{syntax-tree.c/.h}):} Valentín Pastre Thuer, Gribaudo Re Francisco y Francisco Andreani.
+    \item \textbf{Manejo del compilador, constantes y CLI (\texttt{compiler-manager.c/.h}, \texttt{cli.c}, \texttt{constants.h}):} Valentín Pastre Thuer.
+    \item \textbf{Elaboración de pruebas unitarias (\texttt{test\_semantic-analizer.c}, \texttt{test\_syntax-tree.c}):} Valentín Pastre Thuer y Gribaudo Re Francisco.
+\end{itemize}
+
+\section{2. Decisiones de Diseño, Suposiciones y Aclaraciones}
+Habiendo estructurado en la etapa anterior la recolección de datos en la Tabla de Símbolos y la construcción base del AST, el objetivo principal de esta etapa consistió en dotar al compilador de validación semántica completa y unificar el flujo de ejecución entre todos los módulos[cite: 13].
+
+\begin{itemize}
+    \item \textbf{Desacoplamiento entre Análisis Sintáctico y Semántico:} Se mantuvo la premisa de modularización estricta. El archivo \texttt{parser.y} se encarga exclusivamente de estructurar el árbol sintáctico (\texttt{syntaxTree}) mediante los constructores de \texttt{syntax-tree.c} (\texttt{makeNode}, \texttt{makeLeaf} y \texttt{makeSymbol}), delegando la verificación de reglas contextuales, alcances y tipos al módulo \texttt{semantic-analizer.c} a través de las funciones \texttt{analyzeAst}, \texttt{analyzeExpression} y \texttt{evaluateFunctionInvoke}[cite: 13, 15].
+    \item \textbf{Refactorización Léxico-Sintáctica:} Para agilizar la construcción de hojas con literales e identificadores en el AST, se trasladó el reconocimiento de las expresiones regulares de identificadores (\texttt{ID}) y literales (\texttt{INT}, \texttt{FLOAT}, \texttt{BOOL}) directamente a \texttt{scanner.lex}, simplificando las producciones de \texttt{parser.y}[cite: 12].
+    \item \textbf{Centralización de Constantes (\texttt{constants.h}):} Se unificaron las enumeraciones de tipos de datos (\texttt{tInt}, \texttt{tFloat}, \texttt{tBoolean}, \texttt{tVoid}, \texttt{blank}), tipos de símbolos y etapas del compilador en \texttt{header/constants.h} para mantener consistencia entre todos los componentes[cite: 13].
+    \item \textbf{Promoción Implícita y Advertencias de Precisión:} Se decidió soportar coerción/promoción implícita de \texttt{tInt} a \texttt{tFloat} tanto en operaciones aritméticas mixtas como en asignaciones, comparaciones de igualdad y pasaje de argumentos a funciones. En el sentido inverso (asignación de un \texttt{tFloat} a una variable \texttt{tInt}), el analizador permite la operación pero emite una advertencia explícita (\textit{Semantic Warning: Possible loss of precision when assigning float to int})[cite: 1].
+\end{itemize}
+
+\section{3. Diseño y Decisiones Clave: El Analizador Semántico}
+El núcleo de esta entrega reside en \texttt{src/semantic-analizer.c} y \texttt{header/semantic-analizer.h}, donde se implementaron los algoritmos de recorrido y verificación sobre el AST apoyándose en la Tabla de Símbolos multinivel[cite: 13]:
+
+\begin{itemize}
+    \item \textbf{Manejo de Ámbitos (\textit{Scopes}) y Clasificación de Variables:} Aprovechando la estructura de lista doblemente enlazada de \texttt{symbols-tab.c}, el analizador gestiona la apertura y cierre de niveles léxicos mediante \texttt{openLevel} y \texttt{closeLevel} al ingresar o salir de funciones y bloques (\texttt{block}). En los nodos \texttt{varDeclaration}, se utiliza \texttt{findSymbol} para evitar redeclaraciones en el ámbito actual y se inspeccionan los punteros de nivel para clasificar automáticamente cada variable como \texttt{global\_var} o \texttt{local\_var} antes de insertarla con \texttt{addSymbolToTab}[cite: 13, 15]. Para resolver referencias a variables o funciones en expresiones y asignaciones, se utiliza \texttt{findSymbolMultiLevel}, buscando recursivamente desde el ámbito más interno hacia el global[cite: 13].
+    
+    \item \textbf{Validación de Funciones y Reglas sobre \texttt{main}:}
+    \begin{itemize}
+        \item Al finalizar el recorrido del nodo raíz (\texttt{program}), el analizador consulta la Tabla de Símbolos para garantizar que exista obligatoriamente una función llamada \texttt{main} y que no posea parámetros formales (\texttt{paramsNode == NULL})[cite: 13].
+        \item Al procesar un nodo \texttt{function}, se verifica que no esté redefinido, se enlaza su subárbol de parámetros formales en \texttt{symbol->paramsNode}, se registra la función en el nivel actual y luego se abre un nuevo nivel (\texttt{openLevel}) donde se insertan los nodos \texttt{formalParameter} verificando que no existan parámetros duplicados[cite: 13].
+    \end{itemize}
+    
+    \item \textbf{Inferencia y Chequeo de Expresiones (\texttt{analyzeExpression}):} Se implementó una función recursiva que evalúa subárboles de expresiones y retorna el \texttt{enum types} resultante[cite: 13]:
+    \begin{itemize}
+        \item \textit{Operadores Aritméticos (\texttt{addOp}, \texttt{substractOp}, \texttt{multOp}, \texttt{divOp}):} Exigen operandos numéricos (\texttt{tInt} o \texttt{tFloat}), promoviendo el resultado a \texttt{tFloat} si alguno de los operandos es flotante. El nodo \texttt{substractOp} contempla tanto la resta binaria como el menos unario[cite: 13, 14].
+        \item \textit{Operator Módulo (\texttt{modOp}):} Restringido estrictamente a operandos de tipo \texttt{tInt}[cite: 13].
+        \item \textit{Operadores Lógicos (\texttt{andOp}, \texttt{orOp}) y Negación (\texttt{negationOp}):} Requieren exclusivamente operandos de tipo \texttt{tBoolean}[cite: 13, 15].
+        \item \textit{Operadores Relacionales (\texttt{lessOp}, \texttt{greaterOp}) y de Igualdad (\texttt{equalsOp}):} Los relacionales exigen operandos numéricos y retornan \texttt{tBoolean}. El operador de igualdad prohíbe comparaciones con \texttt{tVoid} y exige tipos iguales o numéricos compatibles entre sí[cite: 13].
+    \end{itemize}
+
+    \item \textbf{Verificación de Sentencias de Control, Retorno e Invocaciones:}
+    \begin{itemize}
+        \item \textit{Condicionales y Ciclos (\texttt{ifNode}, \texttt{whileNode}):} Se comprueba que la expresión de condición evalúe obligatoriamente a \texttt{tBoolean}[cite: 13].
+        \item \textit{Control de \texttt{returnNode}:} Mediante la variable estática \texttt{currentMethodReturnType}, se verifica que un método \texttt{tVoid} no retorne expresiones y que un método no-\texttt{void} retorne obligatoriamente un valor cuyo tipo coincida con la firma declarada[cite: 13].
+        \item \textit{Invocación de Funciones (\texttt{evaluateFunctionInvoke}):} Recibe una bandera \texttt{isExpression} que permite distinguir si la función fue llamada como sentencia independiente o dentro de una expresión (prohibiendo que métodos \texttt{tVoid} se utilicen como operandos)[cite: 13]. Además, recorre en paralelo la lista de argumentos actuales (\texttt{actualParameterList}) y la lista de parámetros formales (\texttt{func->paramsNode}) validando la cantidad de argumentos y la compatibilidad de tipos posición por posición[cite: 13].
+    \end{itemize}
+\end{itemize}
+
+\section{4. Integración con el Resto del Compilador}
+Además del analizador semántico, se realizaron modificaciones estructurales en los módulos existentes para consolidar el flujo de compilación[cite: 13]:
+
+\begin{itemize}
+    \item \textbf{Evolución del AST (\texttt{syntax-tree.c/.h}) y \texttt{parser.y}:} Se enriqueció la estructura \texttt{Symbol} con el puntero \texttt{paramsNode} y el soporte de valores tipados[cite: 13]. En \texttt{parser.y} se utiliza la variable auxiliar \texttt{declType} en una acción intermedia para propagar el tipo de dato hacia las listas de declaraciones separadas por comas (\texttt{id\_prime})[cite: 2].
+    \item \textbf{Gestor de Compilación (\texttt{compiler-manager.c/.h}) y CLI (\texttt{cli.c/.h}):} Se incorporó la etapa \texttt{semantic} tanto en el procesamiento de argumentos (\texttt{-target semantic}, establecida además como etapa objetivo por defecto en \texttt{returnTargetStage}) como en \texttt{executeStage} y \texttt{makeOutputFile}[cite: 8, 9, 10]. El compilador ahora genera archivos de salida diferenciados según la etapa solicitada y redirige los reportes semánticos hacia \texttt{semanticOutputFile}[cite: 6, 8].
+\end{itemize}
+
+\section{5. Instrucciones de Compilación y Ejecución de Pruebas}
+El proyecto mantiene la integración con \textbf{Ceedling} (Unity + CMock) configurada en \texttt{project.yml}, generando el ejecutable final bajo el nombre \texttt{c-tds}[cite: 1].
+
+\subsection*{5.1. Ejecución de Tests Unitarios con Ceedling}
+En esta etapa se incorporaron suites de pruebas específicas para validar tanto la construcción del AST como las reglas del analizador semántico[cite: 13]:
+
+\begin{itemize}
+    \item \textbf{Correr tests del Analizador Semántico:}
+\begin{verbatim}
+./ceedling test:semantic-analizer
+\end{verbatim}
+    \item \textbf{Correr tests del Árbol Sintáctico (AST):}
+\begin{verbatim}
+./ceedling test:syntax-tree
+\end{verbatim}
+    \item \textbf{Correr la batería completa de tests del proyecto:}
+\begin{verbatim}
+./ceedling test:all
+\end{verbatim}
+    \textit{(O bien utilizando el script automatizado \texttt{./run-tests.sh} que regenera Flex y Bison antes de invocar a Ceedling).}
+\end{itemize}
+
+\subsection*{5.2. Construcción y Uso del Compilador}
+Para generar la versión de lanzamiento (\textit{Release}) y ejecutar el compilador hasta la etapa semántica sobre un archivo fuente \texttt{.ctds}[cite: 8]:
+\begin{verbatim}
+./compile.sh
+./build/artifacts/release/c-tds -target semantic prueba.ctds
+\end{verbatim}
+
+\section{6. Problemas Conocidos y Testing}
+Durante el desarrollo y la integración de esta tercera etapa se identificaron los siguientes desafíos y detalles de implementación[cite: 13]:
+
+\begin{itemize}
+    \item \textbf{Sincronización de Ámbitos y Parámetros Formales:} Uno de los principales retos fue asegurar que la apertura y cierre de niveles en la Tabla de Símbolos (\texttt{openLevel} y \texttt{closeLevel}) registrara el identificador de la función en el nivel global pero alojara sus parámetros formales dentro del nuevo ámbito local del método, permitiendo además detectar parámetros duplicados antes de evaluar el bloque del cuerpo[cite: 4, 6, 13].
+    \item \textbf{Alineación de Nodos en Listas de Declaraciones:} Al construir el AST en \texttt{parser.y} para declaraciones múltiples (\texttt{var\_decl} e \texttt{id\_prime}), fue necesario asegurar que la estructura de nodos generada por Bison coincidiera con el recorrido esperado por el caso \texttt{varDeclaration} en \texttt{analyzeAst}[cite: 2, 6].
+    \item \textbf{Integración Final en \texttt{semanticStage}:} En \texttt{compiler-manager.c}, la invocación a \texttt{analyzeAst(syntaxTree, ...)} dentro de \texttt{semanticStage()} se dejó preparada junto con la asignación de \texttt{semanticOutputFile = outputFilePtr}, permitiendo ejecutar las pruebas unitarias de \texttt{test\_semantic-analizer.c} de forma desacoplada pasando instancias controladas del AST y de la Tabla de Símbolos[cite: 6, 8].
+\end{itemize}
+
+\end{document}
