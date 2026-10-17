@@ -4,6 +4,7 @@
 
 char *declType;
 ASTNode *syntaxTree;
+int __attribute__((weak)) yylineno = 1;
 
 ASTNode *makeNode(Symbol *symbol, ASTNode *left, ASTNode *right) {
 	ASTNode *node = (ASTNode *)malloc(sizeof(ASTNode));
@@ -22,7 +23,7 @@ Symbol *makeSymbol(char *id, enum symbolTypes symType) {
 	symbol->type = blank;
 	symbol->value.intValue = 0;
 	symbol->hasValue = 0;
-	symbol->line = 0;
+	symbol->line = yylineno;
 	symbol->paramsNode = malloc(sizeof(Symbol));
 	return symbol;
 }

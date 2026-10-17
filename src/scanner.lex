@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "parser.tab.h"
+#define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno;
 extern FILE *outputFilePtr;
 }
 

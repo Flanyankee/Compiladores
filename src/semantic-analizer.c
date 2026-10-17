@@ -26,17 +26,16 @@ int analyzeAst(ASTNode *node, SymbolTab *tab) {
 		Symbol *mainFunc = findSymbol(&query, tab);
 
 		if (mainFunc == NULL || mainFunc->symbolType != function) {
-			fprintf(
-			    semanticOutputFile,
-			    "Semantic Error: Program must contain a 'main' function.\n");
-			semanticErrorFlag = 1;
+			fprintf(semanticOutputFile,
+                    "Semantic Error (Line %d): Program must contain a 'main' function.\n",
+                    symbol->line);
 			return 1;
 		}
 
 		if (mainFunc->paramsNode != NULL) {
-			fprintf(semanticOutputFile, "Semantic Error: The 'main' function "
-			                            "must take no parameters.\n");
-			semanticErrorFlag = 1;
+			fprintf(semanticOutputFile,
+                    "Semantic Error (Line %d): The 'main' function must take no parameters.\n",
+                    mainFunc->line);
 			return 1;
 		}
 		return err | semanticErrorFlag;
@@ -53,9 +52,8 @@ int analyzeAst(ASTNode *node, SymbolTab *tab) {
 
 				if (findSymbol(sym, tab) != NULL) {
 					fprintf(semanticOutputFile,
-					        "Semantic Error: The identifier '%s' was already "
-					        "declared in this scope.\n",
-					        sym->id);
+                            "Semantic Error (Line %d): The identifier '%s' was already declared in this scope.\n",
+                            sym->line, sym->id);
 					semanticErrorFlag = 1;
 					return 1;
 				}
@@ -77,8 +75,8 @@ int analyzeAst(ASTNode *node, SymbolTab *tab) {
 
 		if (existing != NULL) {
 			fprintf(semanticOutputFile,
-			        "Semantic Error: The function '%s' is already defined.\n",
-			        symbol->id);
+                    "Semantic Error (Line %d): The function '%s' is already defined.\n",
+                    symbol->line, symbol->id);
 			semanticErrorFlag = 1;
 			return 1;
 		}
@@ -94,8 +92,9 @@ int analyzeAst(ASTNode *node, SymbolTab *tab) {
 		}
 
 		if (strcmp(symbol->id, "main") == 0 && param_count != 0) {
-			fprintf(semanticOutputFile, "Semantic Error: The 'main' function "
-			                            "must take no parameters.\n");
+			fprintf(semanticOutputFile,
+                    "Semantic Error (Line %d): The 'main' function must take no parameters.\n",
+                    symbol->line);
 			semanticErrorFlag = 1;
 			return 1;
 		}
@@ -114,8 +113,8 @@ int analyzeAst(ASTNode *node, SymbolTab *tab) {
 				Symbol *paramSym = paramNode->symbolData;
 				if (findSymbol(paramSym, tab) != NULL) {
 					fprintf(semanticOutputFile,
-					        "Semantic Error: Duplicate parameter '%s'.\n",
-					        paramSym->id);
+                            "Semantic Error (Line %d): Duplicate parameter '%s'.\n",
+                            paramSym->line, paramSym->id);
 					semanticErrorFlag = 1;
 					closeLevel(tab);
 					return 1;
@@ -146,7 +145,8 @@ int analyzeAst(ASTNode *node, SymbolTab *tab) {
 		enum types cond_type = analyzeExpression(node->left, tab);
 		if (cond_type != tBoolean) {
 			fprintf(semanticOutputFile,
-			        "Semantic Error: The IF condition must be boolean.\n");
+                    "Semantic Error (Line %d): The IF condition must be boolean.\n",
+                    symbol->line);
 			semanticErrorFlag = 1;
 			err = 1;
 		}
@@ -167,7 +167,8 @@ int analyzeAst(ASTNode *node, SymbolTab *tab) {
 		enum types cond_type = analyzeExpression(node->left, tab);
 		if (cond_type != tBoolean) {
 			fprintf(semanticOutputFile,
-			        "Semantic Error: The WHILE condition must be boolean.\n");
+                    "Semantic Error (Line %d): The WHILE condition must be boolean.\n",
+                    symbol->line);
 			semanticErrorFlag = 1;
 			err = 1;
 		}
@@ -179,17 +180,18 @@ int analyzeAst(ASTNode *node, SymbolTab *tab) {
 	case returnNode: {
 		if (currentMethodReturnType == tVoid) {
 			if (node->left != NULL) {
-				fprintf(semanticOutputFile, "Semantic Error: A void method "
-				                            "cannot return an expression.\n");
-				semanticErrorFlag = 1;
+				fprintf(semanticOutputFile,
+                        "Semantic Error (Line %d): A void method cannot return an expression.\n",
+                        symbol->line);
+                semanticErrorFlag = 1;
 				return 1;
 			}
 		} else {
 			if (node->left == NULL) {
-				fprintf(
-				    semanticOutputFile,
-				    "Semantic Error: A non-void method must return a value.\n");
-				semanticErrorFlag = 1;
+				fprintf(semanticOutputFile,
+                        "Semantic Error (Line %d): A non-void method must return a value.\n",
+                        symbol->line);
+                semanticErrorFlag = 1;
 				return 1;
 			}
 
@@ -197,10 +199,9 @@ int analyzeAst(ASTNode *node, SymbolTab *tab) {
 
 			if (ret_type != currentMethodReturnType) {
 				fprintf(semanticOutputFile,
-				        "Semantic Error: Incompatible return type. Expected "
-				        "%d, got %d.\n",
-				        currentMethodReturnType, ret_type);
-				semanticErrorFlag = 1;
+                        "Semantic Error (Line %d): Incompatible return type. Expected %d, got %d.\n",
+                        symbol->line, currentMethodReturnType, ret_type);
+                semanticErrorFlag = 1;
 				return 1;
 			}
 		}
@@ -214,8 +215,8 @@ int analyzeAst(ASTNode *node, SymbolTab *tab) {
 		Symbol *varSym = findSymbolMultiLevel(node->left->symbolData, tab);
 		if (varSym == NULL) {
 			fprintf(semanticOutputFile,
-			        "Semantic Error: Variable '%s' not declared.\n",
-			        node->left->symbolData->id);
+                    "Semantic Error (Line %d): Variable '%s' not declared.\n",
+                    node->left->symbolData->line, node->left->symbolData->id);
 			semanticErrorFlag = 1;
 			return 1;
 		}
@@ -224,8 +225,9 @@ int analyzeAst(ASTNode *node, SymbolTab *tab) {
 		enum types right_type = analyzeExpression(node->right, tab);
 
 		if (left_type == tVoid || right_type == tVoid) {
-			fprintf(semanticOutputFile, "Semantic Error: Incompatible types in "
-			                            "assignment involving 'void'.\n");
+			fprintf(semanticOutputFile,
+                    "Semantic Error (Line %d): Incompatible types in assignment involving 'void'.\n",
+                    symbol->line);
 			semanticErrorFlag = 1;
 			return 1;
 		}
@@ -234,11 +236,12 @@ int analyzeAst(ASTNode *node, SymbolTab *tab) {
 			if (left_type == tFloat && right_type == tInt) {
 			} else if (left_type == tInt && right_type == tFloat) {
 				fprintf(semanticOutputFile,
-				        "Semantic Warning: Possible loss of precision when "
-				        "assigning float to int.\n");
+                        "Semantic Warning (Line %d): Possible loss of precision when assigning float to int.\n",
+                        symbol->line);
 			} else {
 				fprintf(semanticOutputFile,
-				        "Semantic Error: Type mismatch in assignment.\n");
+                        "Semantic Error (Line %d): Type mismatch in assignment.\n",
+                        symbol->line);
 				semanticErrorFlag = 1;
 				return 1;
 			}
@@ -264,6 +267,8 @@ enum types analyzeExpression(ASTNode *expr, SymbolTab *tab) {
 	if (expr == NULL || expr->symbolData == NULL)
 		return tVoid;
 
+	Symbol *symbol = expr->symbolData;
+
 	switch (expr->symbolData->symbolType) {
 	case intLiteral:
 	case floatLiteral:
@@ -277,8 +282,8 @@ enum types analyzeExpression(ASTNode *expr, SymbolTab *tab) {
 		Symbol *sym = findSymbolMultiLevel(expr->symbolData, tab);
 		if (sym == NULL) {
 			fprintf(semanticOutputFile,
-			        "Semantic Error: Identifier '%s' not declared.\n",
-			        expr->symbolData->id);
+                    "Semantic Error (Line %d): Identifier '%s' not declared.\n",
+                    symbol->line, symbol->id);
 			semanticErrorFlag = 1;
 			return tVoid;
 		}
@@ -294,8 +299,9 @@ enum types analyzeExpression(ASTNode *expr, SymbolTab *tab) {
 		enum types left = analyzeExpression(expr->left, tab);
 		enum types right = analyzeExpression(expr->right, tab);
 		if (left != tBoolean || right != tBoolean) {
-			fprintf(semanticOutputFile, "Semantic Error: Logical operators "
-			                            "require boolean operands.\n");
+			fprintf(semanticOutputFile,
+                    "Semantic Error (Line %d): Logical operators require boolean operands.\n",
+                    symbol->line);
 			semanticErrorFlag = 1;
 			return tVoid;
 		}
@@ -305,9 +311,9 @@ enum types analyzeExpression(ASTNode *expr, SymbolTab *tab) {
 	case negationOp: {
 		enum types exp_type = analyzeExpression(expr->left, tab);
 		if (exp_type != tBoolean) {
-			fprintf(
-			    semanticOutputFile,
-			    "Semantic Error: Operator '!' requires a boolean operand.\n");
+			fprintf(semanticOutputFile,
+                    "Semantic Error (Line %d): Operator '!' requires a boolean operand.\n",
+                    symbol->line);
 			semanticErrorFlag = 1;
 			return tVoid;
 		}
@@ -322,7 +328,8 @@ enum types analyzeExpression(ASTNode *expr, SymbolTab *tab) {
 		if (left == tBoolean || right == tBoolean || left == tVoid ||
 		    right == tVoid) {
 			fprintf(semanticOutputFile,
-			        "Semantic Error: Invalid arithmetic operation.\n");
+                    "Semantic Error (Line %d): Invalid arithmetic operation.\n",
+                    symbol->line);
 			semanticErrorFlag = 1;
 			return tVoid;
 		}
@@ -336,8 +343,8 @@ enum types analyzeExpression(ASTNode *expr, SymbolTab *tab) {
 			enum types exp_type = analyzeExpression(expr->left, tab);
 			if (exp_type != tInt && exp_type != tFloat) {
 				fprintf(semanticOutputFile,
-				        "Semantic Error: Unary '-' operator requires a numeric "
-				        "operand.\n");
+                        "Semantic Error (Line %d): Unary '-' operator requires a numeric operand.\n",
+                        symbol->line);
 				semanticErrorFlag = 1;
 				return tVoid;
 			}
@@ -348,7 +355,8 @@ enum types analyzeExpression(ASTNode *expr, SymbolTab *tab) {
 			if (left == tBoolean || right == tBoolean || left == tVoid ||
 			    right == tVoid) {
 				fprintf(semanticOutputFile,
-				        "Semantic Error: Invalid arithmetic operation.\n");
+                        "Semantic Error (Line %d): Invalid arithmetic operation.\n",
+                        symbol->line);
 				semanticErrorFlag = 1;
 				return tVoid;
 			}
@@ -363,8 +371,8 @@ enum types analyzeExpression(ASTNode *expr, SymbolTab *tab) {
 		enum types right = analyzeExpression(expr->right, tab);
 		if (left != tInt || right != tInt) {
 			fprintf(semanticOutputFile,
-			        "Semantic Error: Modulo ('%%') operator requires integer "
-			        "operands.\n");
+                    "Semantic Error (Line %d): Modulo ('%%') operator requires integer operands.\n",
+                    symbol->line);
 			semanticErrorFlag = 1;
 			return tVoid;
 		}
@@ -377,8 +385,9 @@ enum types analyzeExpression(ASTNode *expr, SymbolTab *tab) {
 		enum types right = analyzeExpression(expr->right, tab);
 		if ((left != tInt && left != tFloat) ||
 		    (right != tInt && right != tFloat)) {
-			fprintf(semanticOutputFile, "Semantic Error: Relational comparison "
-			                            "requires numeric types.\n");
+			fprintf(semanticOutputFile,
+                    "Semantic Error (Line %d): Relational comparison requires numeric types.\n",
+                    symbol->line);
 			semanticErrorFlag = 1;
 			return tVoid;
 		}
@@ -389,16 +398,16 @@ enum types analyzeExpression(ASTNode *expr, SymbolTab *tab) {
 		enum types left = analyzeExpression(expr->left, tab);
 		enum types right = analyzeExpression(expr->right, tab);
 		if (left == tVoid || right == tVoid) {
-			fprintf(
-			    semanticOutputFile,
-			    "Semantic Error: Equality comparison involving 'void' type.\n");
+			fprintf(semanticOutputFile,
+                    "Semantic Error (Line %d): Equality comparison involving 'void' type.\n",
+                    symbol->line);
 			semanticErrorFlag = 1;
 			return tVoid;
 		}
-		if (left != right && !((left == tInt && right == tFloat) ||
-		                       (left == tFloat && right == tInt))) {
-			fprintf(semanticOutputFile, "Semantic Error: Equality comparison "
-			                            "between incompatible types.\n");
+		if (left != right && !((left == tInt && right == tFloat) || (left == tFloat && right == tInt))) {
+			fprintf(semanticOutputFile,
+                    "Semantic Error (Line %d): Equality comparison between incompatible types.\n",
+                    symbol->line);
 			semanticErrorFlag = 1;
 			return tVoid;
 		}
@@ -415,21 +424,22 @@ static enum types evaluateFunctionInvoke(ASTNode *expr, SymbolTab *tab,
 	if (expr == NULL || expr->symbolData == NULL)
 		return tVoid;
 
+	Symbol *callSym = expr->symbolData;
 	Symbol *func = findSymbolMultiLevel(expr->symbolData, tab);
+	
 	if (func == NULL || func->symbolType != function) {
 		fprintf(semanticOutputFile,
-		        "Semantic Error: Function '%s' not declared.\n",
-		        expr->symbolData->id);
-		semanticErrorFlag = 1;
+                "Semantic Error (Line %d): Function '%s' not declared.\n",
+                callSym->line, callSym->id);
+        semanticErrorFlag = 1;
 		return tVoid;
 	}
 
 	if (isExpression && func->type == tVoid) {
 		fprintf(semanticOutputFile,
-		        "Semantic Error: Method '%s' does not return a result and "
-		        "cannot be used as an expression.\n",
-		        func->id);
-		semanticErrorFlag = 1;
+                "Semantic Error (Line %d): Method '%s' does not return a result and cannot be used as an expression.\n",
+                callSym->line, func->id);
+        semanticErrorFlag = 1;
 	}
 
 	ASTNode *currActual = expr->left;
@@ -444,11 +454,13 @@ static enum types evaluateFunctionInvoke(ASTNode *expr, SymbolTab *tab,
 
 		if (actual_type != formal_type) {
 			if (!(formal_type == tFloat && actual_type == tInt)) {
-				fprintf(semanticOutputFile,
-				        "Semantic Error: In function '%s', parameter %d "
-				        "expected type %d, but got type %d.\n",
-				        func->id, arg_index, formal_type, actual_type);
-				semanticErrorFlag = 1;
+				int errLine = (currActual->left && currActual->left->symbolData)
+                                  ? currActual->left->symbolData->line
+                                  : callSym->line;
+                fprintf(semanticOutputFile,
+                        "Semantic Error (Line %d): In function '%s', parameter %d expected type %d, but got type %d.\n",
+                        errLine, func->id, arg_index, formal_type, actual_type);
+                semanticErrorFlag = 1;
 			}
 		}
 
@@ -459,9 +471,9 @@ static enum types evaluateFunctionInvoke(ASTNode *expr, SymbolTab *tab,
 
 	if (currActual != NULL || currFormal != NULL) {
 		fprintf(semanticOutputFile,
-		        "Semantic Error: Function '%s' argument count mismatch.\n",
-		        func->id);
-		semanticErrorFlag = 1;
+                "Semantic Error (Line %d): Function '%s' argument count mismatch.\n",
+                callSym->line, func->id);
+        semanticErrorFlag = 1;
 	}
 
 	return func->type;
