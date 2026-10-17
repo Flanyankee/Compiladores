@@ -18,6 +18,7 @@
 	struct ASTNode* node;
 }
 
+%locations
 
 %token WHILE IF ELSE RETURN
 %token <str> TYPE VOID BOOL INT FLOAT ID
@@ -35,6 +36,7 @@
 
 program : v_d m_d {
 		Symbol* programSymbol = makeSymbol("", program);
+		programSymbol->line = @1.first_line;
 		syntaxTree = makeNode(programSymbol, $1, $2);
 		$$ = syntaxTree;
 		}
@@ -42,6 +44,7 @@ program : v_d m_d {
 
 v_d : v_d var_decl {
 		Symbol* symbol = makeSymbol("", varDeclarationList);
+		symbol->line = @1.first_line;
 		ASTNode* vd = makeNode(symbol, $1, $2);
 		$$ = vd;
     		}
@@ -50,7 +53,10 @@ v_d : v_d var_decl {
 
 var_decl : TYPE ID {declType = $1;} id_prime SEMICOLON {
 		Symbol* varDeclSym = makeSymbol("", varDeclaration);
+		varDeclSym->line = @2.first_line;
+
 		Symbol* id = makeSymbol($2, variable);
+		id->line = @2.first_line;
 
 		if (strcmp($1, "int") == 0) {
 			varDeclSym->type = tInt;
@@ -70,7 +76,10 @@ var_decl : TYPE ID {declType = $1;} id_prime SEMICOLON {
 
 id_prime : COMMA ID id_prime { 
 		Symbol* varDeclSym = makeSymbol("", varDeclaration);
+		varDeclSym->line = @2.first_line;
+
 		Symbol* id = makeSymbol($2, variable);
+		id->line = @2.first_line;
 
 		if (strcmp(declType, "int") == 0) {
 			id->type = tInt;
@@ -89,6 +98,7 @@ id_prime : COMMA ID id_prime {
 
 m_d : method_decl m_d {
 		Symbol* symbol = makeSymbol("", methodDeclarationList);
+		symbol->line = @2.first_line;
 		ASTNode* md = makeNode(symbol, $1, $2);
 		$$ = md;
     }
@@ -97,6 +107,7 @@ m_d : method_decl m_d {
 
 method_decl : TYPE ID LEFT_PARENTHESIS t_i RIGHT_PARENTHESIS block {
 		Symbol* funcSym = makeSymbol($2, function);
+		funcSym->line = @2.first_line;
 
 		if (strcmp($1, "int") == 0) {
 			funcSym->type = tInt;
@@ -111,6 +122,7 @@ method_decl : TYPE ID LEFT_PARENTHESIS t_i RIGHT_PARENTHESIS block {
 		}
 	    | VOID ID LEFT_PARENTHESIS t_i RIGHT_PARENTHESIS block {
 		Symbol* funcSym = makeSymbol($2, function);
+		funcSym->line = @2.first_line;
 		funcSym->type = tVoid;
 		ASTNode* funcNode = makeNode(funcSym, $4, $6);
 		$$ = funcNode;
@@ -119,7 +131,9 @@ method_decl : TYPE ID LEFT_PARENTHESIS t_i RIGHT_PARENTHESIS block {
 
 t_i : TYPE ID t_i_2 {
 	Symbol* parameterSym = makeSymbol($2, formalParameter);
+	parameterSym->line = @2.first_line;
 	Symbol* parameterListSym = makeSymbol("", formalParameterList);
+	parameterListSym->line = @3.first_line;
 
 	if (strcmp($1, "int") == 0) {
 		parameterSym->type = tInt;
@@ -139,7 +153,9 @@ t_i : TYPE ID t_i_2 {
 
 t_i_2 : COMMA TYPE ID t_i_2 {
 	Symbol* parameterSym = makeSymbol($3, formalParameter);
+	parameterSym->line = @3.first_line;
 	Symbol* parameterListSym = makeSymbol("", formalParameterList);
+	parameterListSym->line = @4.first_line;
 
 	if (strcmp($2, "int") == 0) {
 		parameterSym->type = tInt;
@@ -159,6 +175,7 @@ t_i_2 : COMMA TYPE ID t_i_2 {
 
 method_call : ID LEFT_PARENTHESIS m_c RIGHT_PARENTHESIS {
 	    Symbol* funcInvokeSym = makeSymbol($1, functionInvoke);
+	    funcInvokeSym->line = @1.first_line;
 	    ASTNode* funcInvokeNode = makeNode(funcInvokeSym, $3, NULL);
 	    $$ = funcInvokeNode;
 	    }
@@ -166,6 +183,7 @@ method_call : ID LEFT_PARENTHESIS m_c RIGHT_PARENTHESIS {
 
 m_c : expr m_c_prime /* m_c son los parametros actuales */ {
     Symbol* parameterListSym = makeSymbol("", actualParameterList);
+    parameterListSym->line = @1.first_line;
     ASTNode* parameterListNode = makeNode(parameterListSym, $1, $2);
     $$ = parameterListNode;
     }
@@ -174,6 +192,7 @@ m_c : expr m_c_prime /* m_c son los parametros actuales */ {
 
 m_c_prime : COMMA expr m_c_prime {
 	  Symbol* parameterListSym = makeSymbol("", actualParameterList);
+	  parameterListSym->line = @2.first_line;
 	  ASTNode* parameterListNode = makeNode(parameterListSym, $2, $3);
 	  $$ = parameterListNode;
 	  }
@@ -198,7 +217,9 @@ stat : statement stat {
 
 statement : ID ASIGN_OP expr SEMICOLON {
 		Symbol* assignSymbol = makeSymbol("", assignOp);
+		assignSymbol->line = @2.first_line;
 		Symbol* idSymbol = makeSymbol($1, variable);
+
 		ASTNode* idTreeNode = makeLeaf(idSymbol);
 		ASTNode* assignNode = makeNode(assignSymbol, idTreeNode, $3);
 		$$ = assignNode;
@@ -206,24 +227,29 @@ statement : ID ASIGN_OP expr SEMICOLON {
 	  | method_call SEMICOLON { $$ = $1; }
 	  | IF LEFT_PARENTHESIS expr RIGHT_PARENTHESIS block else {
 		Symbol* ifSymbol = makeSymbol("", ifNode);
+		ifSymbol->line = @1.first_line;
 		Symbol* ifBodySymbol = makeSymbol("", blankNode);
+
 		ASTNode* ifBodyNode = makeNode(ifBodySymbol, $5, $6);
 		ASTNode* ifTreeNode = makeNode(ifSymbol, $3, ifBodyNode);
 		$$ = ifTreeNode;
 		}
 	  | WHILE LEFT_PARENTHESIS expr RIGHT_PARENTHESIS block {
 		Symbol* whileSymbol = makeSymbol("", whileNode);
+		whileSymbol->line = @1.first_line;
 		ASTNode* whileTreeNode = makeNode(whileSymbol, $3, $5);
 		$$ = whileTreeNode;
 		}
 	  | RETURN SEMICOLON {
 		Symbol* returnSymbol = makeSymbol("return", returnNode);
+		returnSymbol->line = @1.first_line;
 		returnSymbol->type = tVoid;
 		ASTNode* returnTreeNode = makeLeaf(returnSymbol);
 		$$ = returnTreeNode;
 		}
 	  | RETURN expr SEMICOLON {
 		Symbol* returnSymbol = makeSymbol("return", returnNode);
+		returnSymbol->line = @1.first_line;
 		ASTNode* returnTreeNode = makeNode(returnSymbol, $2, NULL);
 		$$ = returnTreeNode;
 		}
@@ -233,6 +259,7 @@ statement : ID ASIGN_OP expr SEMICOLON {
 
 else : ELSE block {
 	Symbol* elseSymbol = makeSymbol("", elseNode);
+	elseSymbol->line = @1.first_line;
 	ASTNode* elseTreeNode = makeNode(elseSymbol, $2, NULL);
 	$$ = elseTreeNode;
      }
@@ -241,6 +268,7 @@ else : ELSE block {
 
 expr : ID {
 	Symbol* idSymbol = makeSymbol($1, variable);
+	idSymbol->line = @1.first_line;
 	ASTNode* exprNode = makeLeaf(idSymbol);
 	$$ = exprNode;
      }
@@ -249,11 +277,13 @@ expr : ID {
      | bin_op { $$ = $1; }
      | SUBTRACT_OP expr {
 	Symbol* substractSymbol = makeSymbol("", substractOp);
+	substractSymbol->line = @1.first_line;
 	ASTNode* substractNode = makeNode(substractSymbol, $2, NULL);
 	$$ = substractNode;
      }
      | EXCLAMATION expr {
 	Symbol* negationSymbol = makeSymbol("", negationOp);
+	negationSymbol->line = @1.first_line;
 	ASTNode* negationNode = makeNode(negationSymbol, $2, NULL);
 	$$ = negationNode;
      }
@@ -267,26 +297,31 @@ bin_op : arith_op { $$ = $1; }
 
 arith_op : expr ADD_OP expr {
 		Symbol* addSymbol = makeSymbol("", addOp);
+		addSymbol->line = @2.first_line;
 		ASTNode* addNode = makeNode(addSymbol, $1, $3);
 		$$ = addNode;
 	 }
 	 | expr SUBTRACT_OP expr {
 		Symbol* substractSymbol = makeSymbol("", substractOp);
+		substractSymbol->line = @2.first_line;
 		ASTNode* substractNode = makeNode(substractSymbol, $1, $3);
 		$$ = substractNode;
 	 }
 	 | expr MULT_OP expr {
 		Symbol* multSymbol = makeSymbol("", multOp);
+		multSymbol->line = @2.first_line;
 		ASTNode* multNode = makeNode(multSymbol, $1, $3);
 		$$ = multNode;
 	 }
 	 | expr DIV_OP expr {
 		Symbol* divSymbol = makeSymbol("", divOp);
+		divSymbol->line = @2.first_line;
 		ASTNode* divNode = makeNode(divSymbol, $1, $3);
 		$$ = divNode;
 	 }
 	 | expr MOD_OP expr {
 		Symbol* modSymbol = makeSymbol("", modOp);
+		modSymbol->line = @2.first_line;
 		ASTNode* modNode = makeNode(modSymbol, $1, $3);
 		$$ = modNode;
 	 }
@@ -294,16 +329,19 @@ arith_op : expr ADD_OP expr {
 
 rel_op : expr LESS_OP expr {
 		Symbol* lessSymbol = makeSymbol("", lessOp);
+		lessSymbol->line = @2.first_line;
 		ASTNode* lessNode = makeNode(lessSymbol, $1, $3);
 		$$ = lessNode;
 	 }
        | expr GREATER_OP expr {
 		Symbol* greaterSymbol = makeSymbol("", greaterOp);
+		greaterSymbol->line = @2.first_line;
 		ASTNode* greaterNode = makeNode(greaterSymbol, $1, $3);
 		$$ = greaterNode;
 	 }
        | expr EQUALS_OP expr {
 		Symbol* equalsSymbol = makeSymbol("", equalsOp);
+		equalsSymbol->line = @2.first_line;
 		ASTNode* equalsNode = makeNode(equalsSymbol, $1, $3);
 		$$ = equalsNode;
 	 }
@@ -311,11 +349,13 @@ rel_op : expr LESS_OP expr {
 
 cond_op : expr AND_OP expr {
 		Symbol* andSymbol = makeSymbol("", andOp);
+		andSymbol->line = @2.first_line;
 		ASTNode* andNode = makeNode(andSymbol, $1, $3);
 		$$ = andNode;
 	 }
         | expr OR_OP expr {
 		Symbol* orSymbol = makeSymbol("", orOp);
+		orSymbol->line = @2.first_line;
 		ASTNode* orNode = makeNode(orSymbol, $1, $3);
 		$$ = orNode;
 	 }
@@ -323,6 +363,7 @@ cond_op : expr AND_OP expr {
 
 literal : INT {
 		Symbol* intSymbol = makeSymbol("", intLiteral);
+		intSymbol->line = @1.first_line;
 		int value = atoi($1);
 		intSymbol->type = tInt;
 		intSymbol->value.intValue = value;
@@ -332,6 +373,7 @@ literal : INT {
 	}
         | BOOL {
 		Symbol* boolSymbol = makeSymbol("", boolLiteral);
+		boolSymbol->line = @1.first_line;
 		boolSymbol->type = tBoolean;
 
 		if (strcmp("true", $1) == 0) {
@@ -346,6 +388,7 @@ literal : INT {
 	}
         | FLOAT {
 		Symbol* floatSymbol = makeSymbol("", floatLiteral);
+		floatSymbol->line = @1.first_line;
 		floatSymbol->type = tFloat;
 		int value = atof($1);
 		floatSymbol->value.floatValue = value;

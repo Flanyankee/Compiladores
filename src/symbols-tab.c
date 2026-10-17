@@ -2,12 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-SymbolTab *initializeSymbolTab(){
-    SymbolTab *tab = (SymbolTab *) malloc(sizeof(SymbolTab));
-    tab->firstLevel = (SymbolTabLevel *) malloc(sizeof(SymbolTabLevel));
-    tab->lastLevel = (SymbolTabLevel *) malloc(sizeof(SymbolTabLevel));
-	
-    (tab->firstLevel)->up = tab->lastLevel;
+SymbolTab *initializeSymbolTab() {
+	SymbolTab *tab = (SymbolTab *)malloc(sizeof(SymbolTab));
+	tab->firstLevel = (SymbolTabLevel *)malloc(sizeof(SymbolTabLevel));
+	tab->lastLevel = (SymbolTabLevel *)malloc(sizeof(SymbolTabLevel));
+
+	(tab->firstLevel)->up = tab->lastLevel;
 	(tab->firstLevel)->down = NULL;
 	(tab->lastLevel)->down = tab->firstLevel;
 	(tab->lastLevel)->up = NULL;
@@ -41,17 +41,17 @@ Symbol *findSymbol(Symbol *symbol, SymbolTab *tab) {
 	return NULL;
 }
 
-Symbol *findSymbolMultiLevel(Symbol *symbol, SymbolTab *tab){
+Symbol *findSymbolMultiLevel(Symbol *symbol, SymbolTab *tab) {
+	if ((tab->lastLevel)->down == tab->firstLevel) {
+		return NULL;
+	}
+
 	Symbol *isFound = findSymbol(symbol, tab);
 	SymbolTab *tabAux = malloc(sizeof(SymbolTab));
 	memcpy(tabAux, tab, sizeof(SymbolTab));
 
-	if(isFound != NULL)
+	if (isFound != NULL)
 		return isFound;
-
-	if((tab->lastLevel)->down == tab->firstLevel){
-        return NULL;
-    }
 
 	(tabAux->lastLevel) = (tabAux->lastLevel)->down;
 	Symbol *res = findSymbolMultiLevel(symbol, tabAux);
@@ -60,14 +60,14 @@ Symbol *findSymbolMultiLevel(Symbol *symbol, SymbolTab *tab){
 	return res;
 }
 
-void openLevel(SymbolTab *tab){
-    SymbolTabLevel *level = (SymbolTabLevel *) malloc(sizeof(SymbolTabLevel));
-    level->first = (SymbolTabElem *) malloc(sizeof(SymbolTabElem));
-    level->last = (SymbolTabElem *) malloc(sizeof(SymbolTabElem));
-	level->up = (SymbolTabLevel *) malloc(sizeof(SymbolTabLevel));
-	level->down = (SymbolTabLevel *) malloc(sizeof(SymbolTabLevel));
+void openLevel(SymbolTab *tab) {
+	SymbolTabLevel *level = (SymbolTabLevel *)malloc(sizeof(SymbolTabLevel));
+	level->first = (SymbolTabElem *)malloc(sizeof(SymbolTabElem));
+	level->last = (SymbolTabElem *)malloc(sizeof(SymbolTabElem));
+	level->up = (SymbolTabLevel *)malloc(sizeof(SymbolTabLevel));
+	level->down = (SymbolTabLevel *)malloc(sizeof(SymbolTabLevel));
 
-    (level->first)->next = level->last;
+	(level->first)->next = level->last;
 	(level->first)->back = NULL;
 	(level->last)->back = level->first;
 	(level->last)->next = NULL;
@@ -78,13 +78,13 @@ void openLevel(SymbolTab *tab){
 	(tab->lastLevel)->down = level;
 }
 
-void closeLevel(SymbolTab *tab){
+void closeLevel(SymbolTab *tab) {
 	SymbolTabLevel *aux = (tab->lastLevel)->down;
 	(tab->lastLevel)->down = (aux)->down;
 	(aux->down)->up = tab->lastLevel;
 
 	SymbolTabElem *aux2 = aux->first;
-	while(aux2->next != NULL){
+	while (aux2->next != NULL) {
 		aux2 = aux2->next;
 		free(aux2->back);
 	}

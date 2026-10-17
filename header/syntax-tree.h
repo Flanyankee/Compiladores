@@ -12,6 +12,7 @@ typedef struct Symbol {
 		float floatValue;
 	} value;
 	int hasValue;
+	int line;
 
 	struct ASTNode *paramsNode;
 } Symbol;

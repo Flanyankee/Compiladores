@@ -4,6 +4,7 @@
 #include "parser.tab.h"
 #include "scanner.h"
 #include "semantic-analizer.h"
+#include "symbols-tab.h"
 #include "syntax-tree.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -116,12 +117,11 @@ void semanticStage() {
 	yyin = source;
 	yyparse();
 	semanticOutputFile = outputFilePtr;
-	/*
-	if (analyzeAst(syntaxTree, symbolsTab?) == 0) {
-	    fprintf(outputFilePtr, "Cadena aceptada. No se encontraron errores
-	semanticos.\n");
+	SymbolTab *st = initializeSymbolTab();
+	if (analyzeAst(syntaxTree, st) == 0) {
+		fprintf(outputFilePtr,
+		        "Cadena aceptada. No se encontraron errores semanticos.\n");
 	}
-	*/
 }
 void codinterStage() {}
 void assemblyStage() {}

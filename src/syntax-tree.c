@@ -22,6 +22,7 @@ Symbol *makeSymbol(char *id, enum symbolTypes symType) {
 	symbol->type = blank;
 	symbol->value.intValue = 0;
 	symbol->hasValue = 0;
+	symbol->line = 0;
 	symbol->paramsNode = malloc(sizeof(Symbol));
 	return symbol;
 }
