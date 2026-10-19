@@ -1,5 +1,6 @@
 #include "compiler-manager.h"
 #include "cli.h"
+#include "codinter.h"
 #include "constants.h"
 #include "parser.tab.h"
 #include "scanner.h"
@@ -123,6 +124,17 @@ void semanticStage() {
 		        "Cadena aceptada. No se encontraron errores semanticos.\n");
 	}
 }
-void codinterStage() {}
+void codinterStage() {
+	yyin = source;
+	yyparse();
+	SymbolTab *st = initializeSymbolTab();
+	initCodinterGenerator();
+	if (analyzeAst(syntaxTree, st) == 0) {
+		generateCodinterFromAST(syntaxTree);
+		if (getCodinterListHead() != NULL) {
+			printCodinter(outputFilePtr);
+		}
+	}
+}
 void assemblyStage() {}
 void objectStage() {}

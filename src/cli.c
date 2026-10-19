@@ -56,7 +56,7 @@ int returnOptimization() {
 
 int returnTargetStage() {
 	if (!targetStage) {
-		return semantic;
+		return codinter;
 	}
 
 	if (strcmp(targetStage, "scan") == 0) {
