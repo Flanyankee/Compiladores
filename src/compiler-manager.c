@@ -127,6 +127,7 @@ void semanticStage() {
 void codinterStage() {
 	yyin = source;
 	yyparse();
+	semanticOutputFile = outputFilePtr;
 	SymbolTab *st = initializeSymbolTab();
 	initCodinterGenerator();
 	if (analyzeAst(syntaxTree, st) == 0) {
