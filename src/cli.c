@@ -56,7 +56,7 @@ int returnOptimization() {
 
 int returnTargetStage() {
 	if (!targetStage) {
-		return codinter;
+		return assembly;
 	}
 
 	if (strcmp(targetStage, "scan") == 0) {

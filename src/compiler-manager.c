@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "assembly.h"
 
 int optimizationLevel, target, isDebugEnabled;
 char *sourceFileName;
@@ -136,5 +137,16 @@ void codinterStage() {
 		}
 	}
 }
-void assemblyStage() {}
+void assemblyStage() {
+    yyin = source;
+    if (yyparse() == 0) {
+        semanticOutputFile = outputFilePtr;
+        SymbolTab *st = initializeSymbolTab();
+        initCodinterGenerator();
+        if (analyzeAst(syntaxTree, st) == 0) {
+            generateCodinterFromAST(syntaxTree);
+            generateAssembly(syntaxTree, getCodinterListHead(), outputFilePtr);
+        }
+    }
+}
 void objectStage() {}

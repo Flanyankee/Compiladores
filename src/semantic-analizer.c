@@ -475,6 +475,7 @@ static enum types evaluateFunctionInvoke(ASTNode *expr, SymbolTab *tab,
                 callSym->line, func->id);
         semanticErrorFlag = 1;
 	}
-
+	
+	callSym->type = func->type;
 	return func->type;
 }
