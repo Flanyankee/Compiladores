@@ -19,7 +19,6 @@ CodinterInstruction *getCodinterListHead(void) {
     return codinterHead;
 }
 
-// Emite una instrucción al final de la lista lineal
 static CodinterInstruction *emit(CodinterOp op, Symbol *arg1, Symbol *arg2, Symbol *result) {
     CodinterInstruction *inst = (CodinterInstruction *)malloc(sizeof(CodinterInstruction));
     inst->op = op;
@@ -38,7 +37,6 @@ static CodinterInstruction *emit(CodinterOp op, Symbol *arg1, Symbol *arg2, Symb
     return inst;
 }
 
-// Genera un temporal nuevo: t0, t1, t2...
 static Symbol *newTemp(enum types type) {
     char buffer[32];
     snprintf(buffer, sizeof(buffer), "t%d", tempCounter++);
@@ -47,7 +45,6 @@ static Symbol *newTemp(enum types type) {
     return temp;
 }
 
-// Genera una etiqueta nueva: L0, L1, L2...
 static Symbol *newLabel(void) {
     char buffer[32];
     snprintf(buffer, sizeof(buffer), "L%d", labelCounter++);
@@ -55,7 +52,6 @@ static Symbol *newLabel(void) {
     return label;
 }
 
-// Recorre una expresión y devuelve el Symbol* (variable, literal o temporal) con el resultado
 Symbol *generateExprCodinter(ASTNode *expr) {
     if (expr == NULL || expr->symbolData == NULL) return NULL;
 
@@ -65,7 +61,6 @@ Symbol *generateExprCodinter(ASTNode *expr) {
         case intLiteral:
         case boolLiteral:
         case floatLiteral: {
-            // Opcional: puedes devolver directamente el literal o cargarlo en un temporal (Load_Const)
             Symbol *t = newTemp(sym->type);
             emit(Codinter_ASSIGN, sym, NULL, t);
             return t;
@@ -87,7 +82,6 @@ Symbol *generateExprCodinter(ASTNode *expr) {
         case equalsOp:
         case andOp:
         case orOp: {
-            // Caso especial: resta unaria (-expr) tiene expr->right == NULL en tu parser.y
             if (sym->symbolType == substractOp && expr->right == NULL) {
                 Symbol *op1 = generateExprCodinter(expr->left);
                 Symbol *res = newTemp(op1->type);
@@ -132,7 +126,6 @@ Symbol *generateExprCodinter(ASTNode *expr) {
         }
 
         case functionInvoke: {
-            // 1. Evaluar argumentos actuales y emitir PARAM
             ASTNode *currParam = expr->left;
             while (currParam != NULL && currParam->symbolData->symbolType == actualParameterList) {
                 Symbol *argSym = generateExprCodinter(currParam->left);
@@ -155,7 +148,6 @@ Symbol *generateExprCodinter(ASTNode *expr) {
     }
 }
 
-// Recorre sentencias, bloques y declaraciones del AST
 void generateCodinterFromAST(ASTNode *node) {
     if (node == NULL || node->symbolData == NULL) return;
 
@@ -172,7 +164,6 @@ void generateCodinterFromAST(ASTNode *node) {
 
         case varDeclarationList:
         case varDeclaration:
-            // Las declaraciones de variables ya están en la tabla de símbolos
             break;
 
         case function: {
@@ -193,21 +184,17 @@ void generateCodinterFromAST(ASTNode *node) {
             Symbol *cond = generateExprCodinter(node->left);
             Symbol *labelFalse = newLabel();
 
-            // Si la condición es falsa, salta a labelFalse
             emit(Codinter_IF_FALSE, cond, NULL, labelFalse);
 
-            // Bloque THEN (hijo izquierdo del blankNode)
             ASTNode *ifBody = node->right;
             if (ifBody != NULL) {
                 generateCodinterFromAST(ifBody->left);
             }
 
-            // Verificar si existe rama ELSE (hijo derecho del blankNode)
             if (ifBody != NULL && ifBody->right != NULL) {
                 Symbol *labelEnd = newLabel();
                 emit(Codinter_GOTO, NULL, NULL, labelEnd);
                 emit(Codinter_LABEL, NULL, NULL, labelFalse);
-                // El bloque del elseNode está en ifBody->right->left
                 generateCodinterFromAST(ifBody->right->left);
                 emit(Codinter_LABEL, NULL, NULL, labelEnd);
             } else {
@@ -220,16 +207,13 @@ void generateCodinterFromAST(ASTNode *node) {
             Symbol *labelStart = newLabel();
             Symbol *labelEnd = newLabel();
 
-            // Etiqueta de inicio antes de evaluar la condición
             emit(Codinter_LABEL, NULL, NULL, labelStart);
             Symbol *cond = generateExprCodinter(node->left);
             emit(Codinter_IF_FALSE, cond, NULL, labelEnd);
 
-            // Cuerpo del while
             generateCodinterFromAST(node->right);
             emit(Codinter_GOTO, NULL, NULL, labelStart);
 
-            // Etiqueta de salida del bucle
             emit(Codinter_LABEL, NULL, NULL, labelEnd);
             break;
         }

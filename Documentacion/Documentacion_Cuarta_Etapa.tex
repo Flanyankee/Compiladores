@@ -1,0 +1,109 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[a4paper, margin=2cm]{geometry}
+\usepackage{fontspec}
+\usepackage[spanish, bidi=basic, provide=*]{babel}
+\babelprovide[import, onchar=ids fonts]{spanish}
+\babelfont{rm}{Noto Sans}
+\usepackage{enumitem}
+\setlist[itemize]{label=-}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\definecolor{primary}{RGB}{44, 62, 80}
+
+\begin{document}
+
+\begin{center}
+    {\LARGE \textbf{\textcolor{primary}{Documentación del Proyecto Compilador}}} \\
+    \vspace{0.5cm}
+    {\large \textbf{Etapa 4:} Generación de Código Intermedio y Testing}
+\end{center}
+\vspace{0.8cm}
+
+\section{1. División del Trabajo}
+El desarrollo de la cuarta etapa del compilador, centrada en el diseño e implementación del generador de Código Intermedio de Tres Direcciones (\texttt{codinter}), su integración con el gestor de compilación y la elaboración de pruebas unitarias, se realizó de manera colaborativa distribuyendo las responsabilidades de la siguiente forma:
+
+\begin{itemize}
+    \item \textbf{Diseño e implementación del Generador de codigo intermedio (\texttt{codinter.c/.h}):} Gribaudo Re Francisco y Francisco Andreani.
+    \item \textbf{Manejo del compilador y CLI para integrar el "codinter" (\texttt{compiler-manager.c/.h}, \texttt{cli.c}):} Valentín Pastre Thuer.
+    \item \textbf{Elaboración de pruebas unitarias (\texttt{test\_codinter.c}):} Francisco Andreani y Gribaudo Re Francisco.
+\end{itemize}
+
+\section{2. Decisiones de Diseño, Suposiciones y Aclaraciones}
+Habiendo completado en la etapa anterior la validación semántica sobre el Árbol de Sintaxis Abstracta (AST) y la Tabla de Símbolos, el objetivo principal de esta etapa consistió en traducir el árbol sintáctico validado a una representación intermedia lineal de Código de Tres Direcciones, concluyendo así la construcción del \textit{front-end} del compilador.
+
+\begin{itemize}
+    \item \textbf{Generación Dinámica de Temporales y Etiquetas:} Se implementaron las funciones auxiliares estáticas \texttt{newTemp(enum types type)} para instanciar variables temporales locales numeradas secuencialmente (\texttt{t0, t1, t2...}) tipadas según la operación realizada, y \texttt{newLabel()} para crear etiquetas de salto (\texttt{L0, L1, L2...}) asociadas a nodos de tipo \texttt{blankNode}.
+    \item \textbf{Carga Explícita de Constantes:} Al evaluar literales (\texttt{intLiteral}, \texttt{boolLiteral}, \texttt{floatLiteral}) en \texttt{generateExprCodinter}, se decidió emitir una instrucción \texttt{Codinter\_ASSIGN} hacia un nuevo temporal antes de utilizarlos en operaciones compuestas, uniformizando el manejo de operandos en las cuádruplas.
+\end{itemize}
+
+\section{3. Diseño y Decisiones Clave: El Generador de Código Intermedio}
+El núcleo de esta entrega reside en \texttt{src/codinter.c} y \texttt{header/codinter.h}, donde se definieron las operaciones del enumerado \texttt{CodinterOp} y los algoritmos de recorrido sobre el AST:
+
+\begin{itemize}
+    \item \textbf{Emisión y Gestión de la Lista Lineal (\texttt{initCodinterGenerator}, \texttt{emit}, \texttt{getCodinterListHead}):}
+    \begin{itemize}
+        \item La función \texttt{emit} reserva memoria dinámicamente para cada nueva estructura \texttt{CodinterInstruction} y la inserta al final de la lista enlazada en tiempo constante $O(1)$ utilizando \texttt{codinterTail}.
+        \item La función \texttt{initCodinterGenerator} reinicia los punteros \texttt{codinterHead} y \texttt{codinterTail} a \texttt{NULL} y pone en cero los contadores \texttt{tempCounter} y \texttt{labelCounter}, permitiendo ejecutar múltiples compilaciones o pruebas unitarias sin arrastrar estado previo.
+    \end{itemize}
+
+    \item \textbf{Traducción de Expresiones (\texttt{generateExprCodinter}):} Recorre recursivamente un subárbol de expresión, emite las instrucciones correspondientes y retorna el puntero \texttt{Symbol*} donde se aloja el resultado:
+    \begin{itemize}
+        \item \textit{Identificadores y Parámetros:} Los nodos con tipo de símbolo \texttt{variable}, \texttt{global\_var}, \texttt{local\_var} y \texttt{formalParameter} devuelven directamente su \texttt{Symbol*} sin emitir instrucciones adicionales.
+        \item \textit{Operadores Unarios (\texttt{Codinter\_NEG}, \texttt{Codinter\_NOT}):} Se distingue la resta unaria verificando cuando un nodo \texttt{substractOp} carece de hijo derecho (\texttt{expr->right == NULL}), emitiendo \texttt{Codinter\_NEG} hacia un nuevo temporal. Por su parte, el nodo \texttt{negationOp} evalúa su operando izquierdo y emite \texttt{Codinter\_NOT} hacia un temporal de tipo \texttt{tBoolean}.
+        \item \textit{Operadores Binarios Aritméticos, Relacionales y Lógicos:} Se evalúan recursivamente ambos operandos (\texttt{leftOp} y \texttt{rightOp}), se determina el tipo del temporal resultante (\texttt{tBoolean} para operaciones relacionales y lógicas, o numérico para las aritméticas) y se emite la cuádrupla con el código correspondiente (\texttt{Codinter\_ADD}, \texttt{Codinter\_SUB}, \texttt{Codinter\_MUL}, \texttt{Codinter\_DIV}, \texttt{Codinter\_MOD}, \texttt{Codinter\_LT}, \texttt{Codinter\_GT}, \texttt{Codinter\_EQ}, \texttt{Codinter\_AND}, \texttt{Codinter\_OR}).
+        \item \textit{Invocación de Métodos (\texttt{functionInvoke}):} Recorre la lista de argumentos actuales (\texttt{actualParameterList}), evalúa cada expresión mediante \texttt{generateExprCodinter} y emite una instrucción \texttt{Codinter\_PARAM} por cada parámetro. Finalmente emite \texttt{Codinter\_CALL}, asignando un temporal de destino si la función retorna un valor no vacío (\texttt{sym->type != tVoid \&\& sym->type != blank}).
+    \end{itemize}
+
+    \item \textbf{Traducción de Sentencias y Control de Flujo (\texttt{generateCodinterFromAST}):}
+    \begin{itemize}
+        \item \textit{Delimitación de Funciones (\texttt{function}):} Emite la directiva \texttt{Codinter\_FUNC\_BEGIN} al iniciar la declaración del método, recorre el cuerpo de la función (\texttt{node->right}) y finaliza emitiendo \texttt{Codinter\_FUNC\_END}.
+        \item \textit{Asignaciones (\texttt{assignOp}):} Evalúa la expresión del lado derecho con \texttt{generateExprCodinter(node->right)} y emite \texttt{Codinter\_ASSIGN} hacia el símbolo de la variable ubicada en \texttt{node->left->symbolData}.
+        \item \textit{Condicionales (\texttt{ifNode}):} Evalúa la condición y emite un salto condicional \texttt{Codinter\_IF\_FALSE} hacia \texttt{labelFalse}. Luego traduce el bloque \textit{then} (\texttt{ifBody->left}); si existe una rama \textit{else} (\texttt{ifBody->right != NULL}), emite un salto incondicional \texttt{Codinter\_GOTO} hacia \texttt{labelEnd}, posiciona la etiqueta \texttt{labelFalse} (\texttt{Codinter\_LABEL}), traduce el bloque del \texttt{elseNode} (\texttt{ifBody->right->left}) y cierra con la etiqueta \texttt{labelEnd}.
+        \item \textit{Ciclos (\texttt{whileNode}):} Crea las etiquetas \texttt{labelStart} y \texttt{labelEnd}, emitiendo primero \texttt{labelStart} (\texttt{Codinter\_LABEL}) antes de evaluar la condición del bucle. Emite \texttt{Codinter\_IF\_FALSE} hacia \texttt{labelEnd}, procesa el cuerpo del ciclo (\texttt{node->right}), añade un salto incondicional \texttt{Codinter\_GOTO} hacia \texttt{labelStart} y ubica \texttt{labelEnd} al final.
+        \item \textit{Sentencias de Retorno (\texttt{returnNode}):} Si el nodo posee una expresión de retorno (\texttt{node->left != NULL}), evalúa su resultado y emite \texttt{Codinter\_RETURN} con dicho operando; en caso contrario, emite \texttt{Codinter\_RETURN} sin argumentos.
+    \end{itemize}
+
+\end{itemize}
+
+\section{4. Integración con el Resto del Compilador}
+Para conectar el generador de código intermedio con la arquitectura general del compilador se actualizaron los siguientes módulos:
+
+\begin{itemize}
+    \item \textbf{Gestor de Compilación (\texttt{compiler-manager.c/.h}):} Se incluyó la cabecera \texttt{codinter.h} y se implementó la función \texttt{codinterStage()}. Esta etapa ejecuta secuencialmente el parser (\texttt{yyparse()}) y el analizador semántico (\texttt{analyzeAst(syntaxTree, st)}); si ambos finalizan sin errores, invoca a \texttt{initCodinterGenerator()}, \texttt{generateCodinterFromAST(syntaxTree)} y \texttt{printCodinter(outputFilePtr)}, escribiendo el resultado en el archivo con extensión \texttt{.ci} generado por \texttt{makeOutputFile()}.
+    \item \textbf{Interfaz de Línea de Comandos (\texttt{cli.c/.h}):} En \texttt{returnTargetStage()} se estableció \texttt{codinter} como la etapa objetivo por defecto cuando no se especifica la bandera \texttt{-target}, además de reconocer explícitamente la opción \texttt{-target codinter}.
+\end{itemize}
+
+\section{5. Instrucciones de Compilación y Ejecución de Pruebas}
+El proyecto mantiene la integración con \textbf{Ceedling} (Unity + CMock) para la ejecución de pruebas unitarias y la construcción del ejecutable \texttt{c-tds}.
+
+\subsection*{5.1. Ejecución de Tests Unitarios con Ceedling}
+En esta etapa se implementó el archivo de pruebas \texttt{test/test\_codinter.c}, el cual integra el flujo completo desde el escaneo en memoria (\texttt{yy\_scan\_string}), el parseo (\texttt{yyparse}) y la validación semántica (\texttt{analyzeAst}), hasta la generación de código intermedio (\texttt{generateCodinterFromAST}), verificando la estructura de la lista devuelta por \texttt{getCodinterListHead()} e imprimiendo las instrucciones con \texttt{printCodinter(stdout)}:
+
+\begin{itemize}
+    \item \textbf{Correr tests del Generador de Código Intermedio:}
+\begin{verbatim}
+./ceedling test:codinter
+\end{verbatim}
+    \item \textbf{Correr la batería completa de tests del proyecto:}
+\begin{verbatim}
+./ceedling test:all
+\end{verbatim}
+\end{itemize}
+
+\subsection*{5.2. Construcción y Uso del Compilador (Generación de archivos \texttt{.ci})}
+Para compilar la versión de lanzamiento (\textit{Release}) y ejecutar el compilador hasta la etapa de código intermedio sobre un archivo fuente \texttt{.ctds}:
+\begin{verbatim}
+./compile.sh
+./build/artifacts/release/c-tds -target codinter -o salida prueba.ctds
+\end{verbatim}
+Esto generará el archivo \texttt{salida.ci} (o \texttt{outputFile.ci} por defecto si se omite \texttt{-o}) con la secuencia de instrucciones de tres direcciones.
+
+\section{6. Problemas Conocidos y Testing}
+Durante el desarrollo y testeo de esta cuarta etapa se identificaron y trabajaron los siguientes aspectos técnicos:
+
+\begin{itemize}
+    \item \textbf{Propagación de Tipos en Llamadas a Funciones (\texttt{functionInvoke}):} En \texttt{parser.y}, los nodos de invocación a funciones se crean inicialmente con \texttt{type = blank}. Dado que \texttt{generateExprCodinter} evalúa \texttt{sym->type != tVoid \&\& sym->type != blank} para decidir si emite una asignación a un temporal (\texttt{tX = CALL func}) o una llamada simple (\texttt{CALL func}), es importante que el analizador semántico actualice el tipo de retorno sobre el nodo de invocación durante \texttt{evaluateFunctionInvoke}.
+\end{itemize}
+
+\end{document}
