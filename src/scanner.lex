@@ -11,6 +11,7 @@ extern FILE *outputFilePtr;
 
 %x COMENTARIO
 
+EXTERN "extern"
 TYPE ("int"|"boolean"|"float")
 VOID "void"
 INT [0-9]+
@@ -23,7 +24,7 @@ RETURN "return"
 ID [a-zA-Z][a-zA-Z0-9_]*
 
 %%
-
+{EXTERN} {return EXTERN;}
 {TYPE} {yylval.str = strdup(yytext); return TYPE;}
 {VOID} {return VOID;}
 {IF} {return IF;}

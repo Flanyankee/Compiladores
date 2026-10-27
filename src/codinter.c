@@ -126,13 +126,20 @@ Symbol *generateExprCodinter(ASTNode *expr) {
         }
 
         case functionInvoke: {
+
+            Symbol *argSyms[16];
+            int argCount = 0;
             ASTNode *currParam = expr->left;
             while (currParam != NULL && currParam->symbolData->symbolType == actualParameterList) {
                 Symbol *argSym = generateExprCodinter(currParam->left);
-                emit(Codinter_PARAM, argSym, NULL, NULL);
+                if (argCount < 16) {
+                    argSyms[argCount++] = argSym;
+                }
                 currParam = currParam->right;
             }
-            // 2. Emitir CALL
+            for (int i = 0; i < argCount; i++) {
+                emit(Codinter_PARAM, argSyms[i], NULL, NULL);
+            }
             if (sym->type != tVoid && sym->type != blank) {
                 Symbol *res = newTemp(sym->type);
                 emit(Codinter_CALL, sym, NULL, res);
@@ -167,9 +174,11 @@ void generateCodinterFromAST(ASTNode *node) {
             break;
 
         case function: {
-            emit(Codinter_FUNC_BEGIN, sym, NULL, NULL);
-            generateCodinterFromAST(node->right); // Cuerpo de la función (block)
-            emit(Codinter_FUNC_END, sym, NULL, NULL);
+            if(node->right != NULL){
+                emit(Codinter_FUNC_BEGIN, sym, NULL, NULL);
+                generateCodinterFromAST(node->right); // Cuerpo de la función (block)
+                emit(Codinter_FUNC_END, sym, NULL, NULL);
+            }
             break;
         }
 

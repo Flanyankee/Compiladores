@@ -56,6 +56,15 @@ static void collectGlobalsAndEmit(ASTNode *node, FILE *out) {
     }
 }
 
+static void clearGlobalVars(void) {
+    while (globalHead != NULL) {
+        GlobalVar *tmp = globalHead;
+        globalHead = globalHead->next;
+        free(tmp->name);
+        free(tmp);
+    }
+}
+
 static void clearStackVars(void) {
     while (stackHead != NULL) {
         StackVar *tmp = stackHead;
@@ -117,7 +126,7 @@ static int buildFunctionStackFrame(CodinterInstruction *funcBegin) {
         }
     }
 
-    /* Alinear el tamaño del stack a múltiplos de 16 bytes (ABI x86-64) */
+    // Alinear el tamaño del stack a múltiplos de 16 bytes 
     int frameSize = -currentStackOffset;
     if (frameSize % 16 != 0) {
         frameSize += 8;
@@ -154,6 +163,8 @@ static void storeOperand(const char *reg, Symbol *dest, FILE *out) {
 
 void generateAssembly(ASTNode *astRoot, CodinterInstruction *codinterHead, FILE *out) {
     if (out == NULL) return;
+    clearGlobalVars();
+    clearStackVars();
 
     const char *argRegs[6] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
     Symbol *pendingParams[16];
@@ -166,7 +177,6 @@ void generateAssembly(ASTNode *astRoot, CodinterInstruction *codinterHead, FILE 
         collectGlobalsAndEmit(astRoot->left, out);
     }
 
-    /* 2. Traducir cada instrucción de código intermedio */
     for (CodinterInstruction *curr = codinterHead; curr != NULL; curr = curr->next) {
         switch (curr->op) {
             case Codinter_FUNC_BEGIN: {

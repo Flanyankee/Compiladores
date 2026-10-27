@@ -20,7 +20,7 @@
 
 %locations
 
-%token WHILE IF ELSE RETURN
+%token WHILE IF ELSE RETURN EXTERN
 %token <str> TYPE VOID BOOL INT FLOAT ID
 %token AND_OP OR_OP ADD_OP MULT_OP SUBTRACT_OP ASIGN_OP DIV_OP MOD_OP LESS_OP GREATER_OP EQUALS_OP 
 %token DOT COMMA SEMICOLON LEFT_PARENTHESIS RIGHT_PARENTHESIS LEFT_BRACE RIGHT_BRACE UNDERSCORE EXCLAMATION 
@@ -127,7 +127,27 @@ method_decl : TYPE ID LEFT_PARENTHESIS t_i RIGHT_PARENTHESIS block {
 		ASTNode* funcNode = makeNode(funcSym, $4, $6);
 		$$ = funcNode;
 		}
-            ;
+		| EXTERN TYPE ID LEFT_PARENTHESIS t_i RIGHT_PARENTHESIS SEMICOLON {
+            Symbol* funcSym = makeSymbol($3, function);
+            funcSym->line = @3.first_line;
+            if (strcmp($2, "int") == 0) {
+                funcSym->type = tInt;
+            } else if (strcmp($2, "boolean") == 0) {
+                funcSym->type = tBoolean;
+            } else {
+                funcSym->type = tFloat;
+            }
+            ASTNode* funcNode = makeNode(funcSym, $5, NULL);
+            $$ = funcNode;
+        }
+        | EXTERN VOID ID LEFT_PARENTHESIS t_i RIGHT_PARENTHESIS SEMICOLON {
+            Symbol* funcSym = makeSymbol($3, function);
+            funcSym->line = @3.first_line;
+            funcSym->type = tVoid;
+            ASTNode* funcNode = makeNode(funcSym, $5, NULL);
+            $$ = funcNode;
+        }
+        ;
 
 t_i : TYPE ID t_i_2 {
 	Symbol* parameterSym = makeSymbol($2, formalParameter);

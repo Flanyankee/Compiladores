@@ -1,0 +1,15 @@
+int inc(int x) {
+    return x + 1;
+}
+extern int get_int();
+extern void printInt(int x);
+void main() {
+    int y;
+    y = inc(get_int());
+    if (y == 1) {
+        printInt(1);
+    } else {
+        printInt(0);
+    }
+    return;
+}
