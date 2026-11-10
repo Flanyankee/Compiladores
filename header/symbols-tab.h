@@ -20,6 +20,8 @@ typedef struct SymbolTab {
 	struct SymbolTabLevel *lastLevel;
 } SymbolTab;
 
+extern SymbolTab *symbolsTab;
+
 SymbolTab *initializeSymbolTab();
 
 void addSymbolToTab(Symbol *symbol, SymbolTab *tab);

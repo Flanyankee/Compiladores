@@ -15,7 +15,7 @@ void applyOptimization(int optimizationLevel);
 
 void scannerStage();
 void parseStage();
-void semanticStage();
+int semanticStage();
 void codinterStage();
 void assemblyStage();
 void objectStage();

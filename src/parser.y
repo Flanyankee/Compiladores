@@ -411,7 +411,7 @@ literal : INT {
 		Symbol* floatSymbol = makeSymbol("", floatLiteral);
 		floatSymbol->line = @1.first_line;
 		floatSymbol->type = tFloat;
-		int value = atof($1);
+		float value = atof($1);
 		floatSymbol->value.floatValue = value;
 		floatSymbol->hasValue = 1;
 		ASTNode* floatNode = makeLeaf(floatSymbol);

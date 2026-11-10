@@ -1,6 +1,6 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
-enum optimizations { none };
+enum optimizations { none, constants, dead_code, memory, all };
 enum compilerStages { scan, parse, semantic, codinter, assembly, object };
 enum symbolTypes {
 	function,
@@ -9,8 +9,6 @@ enum symbolTypes {
 	formalParameter,
 
 	program,
-	constant, // despues hay que ver si borramos constant o borramos los
-	          // literals de abajo.
 	variable,
 	functionInvoke,
 	formalParameterList,

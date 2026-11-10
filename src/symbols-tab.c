@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+SymbolTab *symbolsTab;
+
 SymbolTab *initializeSymbolTab() {
 	SymbolTab *tab = (SymbolTab *)malloc(sizeof(SymbolTab));
 	tab->firstLevel = (SymbolTabLevel *)malloc(sizeof(SymbolTabLevel));

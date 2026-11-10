@@ -44,13 +44,19 @@ void handleCliInput(int num, char **args) {
 
 int returnOptimization() {
 	if (!optimization) {
-		return -1;
+		return none;
 	}
 
 	if (strcmp(optimization, "none") == 0) {
-		return -1;
+		return none;
+	} else if (strcmp(optimization, "constants") == 0) {
+		return constants;
+	} else if (strcmp(optimization, "dead-code") == 0) {
+		return dead_code;
+	} else if (strcmp(optimization, "memory") == 0) {
+		return memory;
 	} else {
-		return 9999;
+		return all;
 	}
 }
 
@@ -122,5 +128,9 @@ void printHelp() {
 	printf("\t\tunless one is specified.\n");
 	printf("\t\tAvailable optimizations:\n");
 	printf("\t\t\tnone\t\t Performs no optimization.\n");
+	printf("\t\t\tconstants\t\t Performs no optimization.\n");
+	printf("\t\t\tdead-code\t\t Performs no optimization.\n");
+	printf("\t\t\tmemory\t\t Performs no optimization.\n");
+	printf("\t\t\tall\t\t Performs no optimization.\n");
 	printf("\n-debug\t\tPrint debug information.\n");
 }

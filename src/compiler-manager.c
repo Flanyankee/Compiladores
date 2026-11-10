@@ -1,7 +1,9 @@
 #include "compiler-manager.h"
+#include "assembly.h"
 #include "cli.h"
 #include "codinter.h"
 #include "constants.h"
+#include "optimizations.h"
 #include "parser.tab.h"
 #include "scanner.h"
 #include "semantic-analizer.h"
@@ -11,7 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "assembly.h"
 
 int optimizationLevel, target, isDebugEnabled;
 char *sourceFileName;
@@ -52,11 +53,9 @@ void executeStage(int targetStage) {
 		break;
 	case assembly:
 		assemblyStage();
-		applyOptimization(optimizationLevel);
 		break;
 	default:
 		objectStage();
-		applyOptimization(optimizationLevel);
 		break;
 	}
 	fclose(outputFilePtr);
@@ -97,6 +96,17 @@ void makeOutputFile(int targetStage) {
 
 void applyOptimization(int optimizationLevel) {
 	if (optimizationLevel != none) {
+		switch (optimizationLevel) {
+		case constants:
+			constantOptimizations();
+			break;
+		case dead_code:
+			break;
+		case memory:
+			break;
+		default:
+			break;
+		}
 	}
 }
 
@@ -111,43 +121,40 @@ void scannerStage() {
 void parseStage() {
 	yyin = source;
 	if (yyparse() == 0) {
-		fprintf(outputFilePtr, "Cadena aceptada.\n");
+		if (target == parse) {
+			fprintf(outputFilePtr, "Cadena aceptada.\n");
+		}
 	}
 };
 
-void semanticStage() {
-	yyin = source;
-	yyparse();
+int semanticStage() {
+	parseStage();
 	semanticOutputFile = outputFilePtr;
-	SymbolTab *st = initializeSymbolTab();
-	if (analyzeAst(syntaxTree, st) == 0) {
-		fprintf(outputFilePtr,
-		        "Cadena aceptada. No se encontraron errores semanticos.\n");
+	symbolsTab = initializeSymbolTab();
+	if (analyzeAst(syntaxTree, symbolsTab) == 0) {
+		if (target == semantic) {
+			fprintf(outputFilePtr,
+			        "Cadena aceptada. No se encontraron errores semanticos.\n");
+		}
+		return 1;
 	}
+	return 0;
 }
+
 void codinterStage() {
-	yyin = source;
-	yyparse();
-	semanticOutputFile = outputFilePtr;
-	SymbolTab *st = initializeSymbolTab();
+	int semanticResult = semanticStage();
+	applyOptimization(optimizationLevel);
 	initCodinterGenerator();
-	if (analyzeAst(syntaxTree, st) == 0) {
+	if (semanticResult) {
 		generateCodinterFromAST(syntaxTree);
-		if (getCodinterListHead() != NULL) {
+		if (getCodinterListHead() != NULL && target == codinter) {
 			printCodinter(outputFilePtr);
 		}
 	}
 }
+
 void assemblyStage() {
-    yyin = source;
-    if (yyparse() == 0) {
-        semanticOutputFile = outputFilePtr;
-        SymbolTab *st = initializeSymbolTab();
-        initCodinterGenerator();
-        if (analyzeAst(syntaxTree, st) == 0) {
-            generateCodinterFromAST(syntaxTree);
-            generateAssembly(syntaxTree, getCodinterListHead(), outputFilePtr);
-        }
-    }
+	codinterStage();
+	generateAssembly(syntaxTree, getCodinterListHead(), outputFilePtr);
 }
 void objectStage() {}
