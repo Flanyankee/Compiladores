@@ -1,0 +1,120 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[a4paper, margin=2cm]{geometry}
+\usepackage{fontspec}
+\usepackage[spanish, english, bidi=basic, provide=*]{babel}
+\babelprovide[import, onchar=ids fonts]{spanish}
+\babelfont{rm}{Noto Sans}
+\usepackage{enumitem}
+\setlist[itemize]{label=-}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\definecolor{primary}{RGB}{44, 62, 80}
+
+\begin{document}
+
+\begin{center}
+    {\LARGE \textbf{\textcolor{primary}{Documentación del Proyecto Compilador}}} \\
+    \vspace{0.5cm}
+    {\large \textbf{Etapa 5:} Generación de Código Assembly (x86-64) y Testing}
+\end{center}
+\vspace{0.8cm}
+
+\section{División del Trabajo}
+El desarrollo de la quinta etapa del compilador, centrada en el diseño e implementación del generador de Código Ensamblador x86-64 (\texttt{assembly}), el soporte para funciones externas (\texttt{extern}), su integración con el gestor de compilación y la elaboración de pruebas de ejecución, se realizó de manera colaborativa distribuyendo las responsabilidades de la siguiente forma:
+
+\begin{itemize}
+    \item \textbf{Diseño e implementación del Generador de Código Assembly (\texttt{assembly.c/.h}):} Gribaudo Re Francisco y Francisco Andreani.
+    \item \textbf{Manejo del compilador, CLI y soporte de métodos externos (\texttt{compiler-manager.c/.h}, \texttt{cli.c}, \texttt{parser.y}, \texttt{codinter.c}):} Valentín Pastre Thuer.
+    \item \textbf{Elaboración de pruebas unitarias y de integración (\texttt{test\_assembly.c}):} Francisco Andreani y Gribaudo Re Francisco.
+\end{itemize}
+
+\section{Decisiones de Diseño, Suposiciones y Aclaraciones}
+Habiendo concluido en la etapa anterior del compilador mediante la generación de Código Intermedio de Tres Direcciones, el objetivo de esta etapa consistió en utilizar el codigo de tres dirrecciones para construir el código ensamblador \textbf{x86-64 (GCC en Linux)}.
+
+\begin{itemize}
+    \item \textbf{Adopción de la Convención de Llamadas:} Para permitir enlazar funciones escritas en C (como los ejemplos: \texttt{get\_int} o \texttt{printInt}), se respetó el estándar de la arquitectura x86-64. Los primeros seis argumentos de una invocación se pasan a través de los registros \texttt{\%rdi}, \texttt{\%rsi}, \texttt{\%rdx}, \texttt{\%rcx}, \texttt{\%r8} y \texttt{\%r9}, mientras que el valor de retorno se deposita en el registro \texttt{\%rax}.
+    \item \textbf{Asignación en el Marco de Pila (\textit{Stack Frame}) y Registros de Trabajo:} Se optó por un esquema de almacenamiento uniforme donde todos los parámetros formales, variables locales y variables temporales (\texttt{t0, t1, t2...}) de una función reciben una casilla dedicada de 8 bytes (\textit{quadword}) con desplazamiento negativo respecto al puntero base \texttt{\%rbp} (\texttt{-8(\%rbp)}, \texttt{-16(\%rbp)}, etc.). Para ejecutar las operaciones sin corromper los registros de argumentos ni el puntero de pila, todas las instrucciones cargan sus operandos en los registros temporales \texttt{\%r10} y \texttt{\%r11} (o \texttt{\%rax} y \texttt{\%rdx} en el caso de la división y el módulo), operan entre registros y vuelcan el resultado nuevamente a memoria.
+    \item \textbf{Soporte de Declaraciones \texttt{extern}:} Se incorporó el reconocimiento de métodos declarados con el calificador \texttt{extern} en el análisis léxico-sintáctico (representados en el AST como nodos \texttt{function} con hijo derecho \texttt{NULL}). De este modo, el analizador semántico valida sus firmas en la Tabla de Símbolos, pero tanto \texttt{codinter.c} como \texttt{assembly.c} omiten la generación de cuerpo para dichas funciones, emitiendo únicamente la instrucción \texttt{call <nombre>} cuando son invocadas.
+\end{itemize}
+
+\section{Diseño y Decisiones Clave: El Generador de Código Assembly}
+El desarollo de esta entrega se vio principalmente en \texttt{src/assembly.c} y \texttt{header/assembly.h}, donde se implementaron las estructuras de administración de memoria y el traductor de instrucciones de tres direcciones:
+
+\begin{itemize}
+    \item \textbf{Gestión de Variables Globales (\texttt{registerGlobal}, \texttt{isGlobalVar}, \texttt{collectGlobalsAndEmit}, \texttt{clearGlobalVars}):}
+    \begin{itemize}
+        \item Antes de traducir las funciones, \texttt{collectGlobalsAndEmit} recorre recursivamente el subárbol de declaraciones globales (\texttt{astRoot->left}). Por cada nodo \texttt{varDeclaration}, registra el identificador en la lista enlazada \texttt{globalHead} mediante \texttt{registerGlobal} y emite la directiva \texttt{.comm <nombre>, 8, 8}, reservando 8 bytes alineados a 8 bytes en la sección BSS.
+        \item La función \texttt{isGlobalVar} permite distinguir en tiempo de traducción si un identificador debe accederse mediante direccionamiento relativo al contador de programa (\texttt{<id>(\%rip)}) en lugar de buscarlo en la pila local.
+    \end{itemize}
+
+    \item \textbf{Construcción y Alineación del Marco de Pila (\texttt{getOrAssignOffset}, \texttt{buildFunctionStackFrame}, \texttt{clearStackVars}):}
+    \begin{itemize}
+        \item La función \texttt{getOrAssignOffset(Symbol *s)} busca el nombre del símbolo en la lista local \texttt{stackHead}; si ya fue registrado, devuelve su desplazamiento negativo actual. Si no existe (y no es un literal, etiqueta, función ni variable global), decrementa \texttt{currentStackOffset} en 8 bytes, inserta un nuevo nodo \texttt{StackVar} y retorna el nuevo offset.
+        \item Al encontrar el inicio de una función (\texttt{Codinter\_FUNC\_BEGIN}), \texttt{buildFunctionStackFrame} limpia la tabla local anterior, asigna offsets a los parámetros formales de la función (\texttt{funcSym->paramsNode}) y escanea todas las cuádruplas hasta \texttt{Codinter\_FUNC\_END} registrando cada variable local y temporal utilizada en \texttt{arg1}, \texttt{arg2} y \texttt{result}.
+        \item Finalmente, calcula el tamaño total del marco (\texttt{frameSize = -currentStackOffset}) y verifica \texttt{if (frameSize \% 16 != 0) frameSize += 8;}, garantizando que el puntero de pila \texttt{\%rsp} quede estrictamente alineado a múltiplos de 16 bytes como exige la ABI de x86-64 antes de cualquier instrucción \texttt{call}.
+    \end{itemize}
+
+    \item \textbf{Funciones Auxiliares de Carga y Almacenamiento (\texttt{loadOperand}, \texttt{storeOperand}):}
+    \begin{itemize}
+        \item \texttt{loadOperand(Symbol *s, const char *reg, FILE *out)} abstrae el origen del dato emitiendo \texttt{movq \$<val>, <reg>} para literales enteros o booleanos (\texttt{1} o \texttt{0}), \texttt{movq <id>(\%rip), <reg>} para variables globales y \texttt{movq <offset>(\%rbp), <reg>} para variables locales, parámetros o temporales.
+        \item \texttt{storeOperand(const char *reg, Symbol *dest, FILE *out)} vuelca el valor calculado en el registro hacia \texttt{<id>(\%rip)} si el destino es global, o hacia \texttt{<offset>(\%rbp)} si pertenece al marco de pila.
+    \end{itemize}
+
+    \item \textbf{Traducción de Instrucciones de Tres Direcciones (\texttt{generateAssembly}):}
+    \begin{itemize}
+        \item \textbf{Prólogo y Epílogo de Funciones (\texttt{Codinter\_FUNC\_BEGIN}, \texttt{Codinter\_FUNC\_END}, \texttt{Codinter\_RETURN}):} Al iniciar cada función se emite la directiva \texttt{.globl <id>}, la etiqueta de entrada, la creación del marco (\texttt{pushq \%rbp}, \texttt{movq \%rsp, \%rbp}, \texttt{subq \$<frameSize>, \%rsp}) y se copian los parámetros recibidos en \texttt{argRegs} (\texttt{\%rdi} a \texttt{\%r9}) hacia sus respectivas posiciones en la pila. En \texttt{Codinter\_RETURN}, se carga el valor de retorno en \texttt{\%rax} (o \texttt{\$0} si es vacío) seguido de \texttt{leave} y \texttt{ret}.
+        \item \textbf{Operaciones Aritméticas (\texttt{ADD}, \texttt{SUB}, \texttt{MUL}, \texttt{DIV}, \texttt{MOD}, \texttt{NEG}):} Para suma, resta y multiplicación se cargan los operandos en \texttt{\%r10} y \texttt{\%r11}, aplicando \texttt{addq}, \texttt{subq} o \texttt{imulq} sobre \texttt{\%r10}. Para \texttt{DIV} y \texttt{MOD}, se carga el dividendo en \texttt{\%rax}, se extiende su signo a 128 bits en \texttt{\%rdx:\%rax} con la instrucción \texttt{cqto}, se divide por \texttt{\%r11} con \texttt{idivq \%r11} y se almacena \texttt{\%rax} (cociente) o \texttt{\%rdx} (resto) según corresponda. La resta unaria (\texttt{NEG}) emplea \texttt{negq \%r10}.
+        \item \textbf{Operaciones Lógicas y Relacionales (\texttt{AND}, \texttt{OR}, \texttt{NOT}, \texttt{LT}, \texttt{GT}, \texttt{EQ}):} Los operadores booleanos binarios utilizan \texttt{andq} y \texttt{orq}, mientras que la negación lógica (\texttt{NOT}) invierte el bit menos significativo mediante \texttt{xorq \$1, \%r10}. Las comparaciones relacionales ejecutan \texttt{cmpq \%r11, \%r10}, capturan el estado de los \textit{flags} en el byte inferior \texttt{\%al} con \texttt{setl}, \texttt{setg} o \texttt{sete}, y lo expanden con ceros a 64 bits mediante \texttt{movzbq \%al, \%r10}.
+        \item \textbf{Control de Flujo e Invocaciones (\texttt{LABEL}, \texttt{GOTO}, \texttt{IF\_FALSE}, \texttt{PARAM}, \texttt{CALL}):} Las etiquetas de salto se emiten con prefijo de etiqueta local (\texttt{.<L>:}) y los saltos incondicionales con \texttt{jmp .<L>}. La instrucción \texttt{IF\_FALSE} compara la condición con cero (\texttt{cmpq \$0, \%r10}) y salta si es igual mediante \texttt{je .<L>}. Los nodos \texttt{PARAM} encolan los símbolos en el arreglo \texttt{pendingParams}, los cuales son cargados en orden sobre los registros \texttt{argRegs} justo antes de emitir \texttt{call <func>} en \texttt{Codinter\_CALL}, almacenando finalmente \texttt{\%rax} en el temporal de destino si la función retorna un valor. Al finalizar el archivo se añade la directiva \texttt{.section .note.GNU-stack,"",@progbits} para indicar al enlazador que la pila no requiere permisos de ejecución.
+    \end{itemize}
+\end{itemize}
+
+\section{Integración con el Resto del Compilador}
+Para integrar la generación de código ensamblador como etapa final del compilador se actualizaron los siguientes módulos:
+
+\begin{itemize}
+    \item \textbf{Gestor de Compilación (\texttt{compiler-manager.c/.h}):} Se incluyó la cabecera \texttt{assembly.h} y se completó la función \texttt{assemblyStage()}. Esta función ejecuta en secuencia el análisis sintáctico (\texttt{yyparse()}), el análisis semántico (\texttt{analyzeAst(syntaxTree, st)}), la generación de código intermedio (\texttt{generateCodinterFromAST(syntaxTree)}) y finalmente invoca a \texttt{generateAssembly(syntaxTree, getCodinterListHead(), outputFilePtr)}, volcando el código x86-64 en el archivo con extensión \texttt{.ass} creado por \texttt{makeOutputFile()}.
+    \item \textbf{Interfaz de Línea de Comandos (\texttt{cli.c/.h}):} En \texttt{returnTargetStage()} se actualizó el comportamiento por defecto para retornar la etapa \texttt{assembly} cuando no se especifica la bandera \texttt{-target}, además de reconocer explícitamente \texttt{-target assembly}.
+\end{itemize}
+
+\section{Instrucciones de Compilación y Ejecución de Pruebas}
+El proyecto mantiene la integración con \textbf{Ceedling} (Unity + CMock) para la validación automatizada de todas las etapas y la compilación del binario \texttt{c-tds}.
+
+\subsection*{5.1. Ejecución de Tests Unitarios y de Hardware con Ceedling}
+En esta etapa se implementó la suite \texttt{test/test\_assembly.c}, la cual compila programas completos en C-TDS hasta generar el archivo \texttt{.ass}, invoca a \texttt{gcc -x assembler} para verificar que el código ensamblador sea 100\% válido, ejecuta el binario nativo resultante y comprueba el valor devuelto en \texttt{\%rax} mediante \texttt{WEXITSTATUS}:
+
+\begin{itemize}
+    \item \textbf{Correr tests del Generador de Código Assembly:}
+\begin{verbatim}
+./ceedling test:assembly
+\end{verbatim}
+    \item \textbf{Correr la batería completa de tests del proyecto:}
+\begin{verbatim}
+./ceedling test:all
+\end{verbatim}
+\end{itemize}
+
+\subsection*{5.2. Construcción y Uso del Compilador (Generación y enlace de archivos \texttt{.ass})}
+Para compilar la versión de lanzamiento (\textit{Release}), generar el código ensamblador de un archivo fuente \texttt{.ctds} y ensamblarlo con GCC:
+\begin{verbatim}
+./compile.sh
+./build/artifacts/release/c-tds -target assembly -o salida prueba.ctds
+gcc -x assembler salida.ass -o programa
+./programa
+\end{verbatim}
+En caso de utilizar funciones externas declaradas con \texttt{extern} (como \texttt{get\_int} y \texttt{printInt} implementadas en un archivo auxiliar \texttt{libreria.c}), el enlace se realiza ejecutando:
+\begin{verbatim}
+gcc -x assembler salida.ass -x c libreria.c -o programa_final
+./programa_final
+\end{verbatim}
+
+\section{Problemas Conocidos y Testing}
+Durante el desarrollo y testeo de esta quinta etapa se identificaron y resolvieron los siguientes aspectos técnicos:
+
+\begin{itemize}
+    \item \textbf{Orden de Evaluación en Llamadas a Funciones Anidadas:} Al probar expresiones con llamadas anidadas del estilo \texttt{y = inc(get\_int());}, se observó que si se emitían las instrucciones \texttt{Codinter\_PARAM} a medida que se recorrían los argumentos, los parámetros de una función externa podían mezclarse con los de una llamada interna. Para solucionarlo, en \texttt{generateExprCodinter} (\texttt{case functionInvoke}) primero se evalúan recursivamente todas las expresiones de los argumentos actuales guardando sus símbolos temporales en un arreglo local (\texttt{argSyms}), y luego se emiten todas las instrucciones \texttt{Codinter\_PARAM} juntas inmediatamente antes de \texttt{Codinter\_CALL}.
+    \item \textbf{Aislamiento de Marcos de Pila en Llamadas Recursivas:} Para verificar que la reserva dinámica del stack (\texttt{subq \$<frameSize>, \%rsp}) y el guardado de parámetros desde \texttt{\%rdi} hacia \texttt{-8(\%rbp)} no sobrescribieran valores entre invocaciones sucesivas, se incorporó un caso de prueba de factorial recursivo en \texttt{test\_assembly.c}, comprobando la correcta preservación del contexto en cada nivel de recursión.
+\end{itemize}
+
+\end{document}
