@@ -7,6 +7,10 @@ void constantOptimizations(void) {
 	syntaxTree = constantOptimizationsHelper(syntaxTree);
 }
 
+void deadCodeOptimizations(void) {
+    syntaxTree = optimizeUnreachableCode(syntaxTree);
+}
+
 ASTNode *constantOptimizationsHelper(ASTNode *node) {
 	if (node == NULL) {
 		return NULL;
@@ -93,4 +97,32 @@ ASTNode *foldConstantOperation(ASTNode *node, Symbol *leftSym,
 
 	Symbol *resultSymbol = createLiteralSymbol(hasFloat, resFloat, resInt);
 	return makeLeaf(resultSymbol);
+}
+ASTNode* optimizeUnreachableCode(ASTNode* node) {
+    if (node == NULL) return NULL;
+
+    node->left = optimizeUnreachableCode(node->left);
+    node->right = optimizeUnreachableCode(node->right);
+
+    if (node->symbolData->symbolType == statementList) {
+        ASTNode* currentStatement = node->left;
+        if (currentStatement != NULL && currentStatement->symbolData != NULL && 
+            currentStatement->symbolData->symbolType == returnNode) {
+
+            node->right = NULL;
+        }
+    }
+
+    if (node->symbolData->symbolType == ifNode || node->symbolData->symbolType == whileNode) {
+        ASTNode* condition = node->left;
+
+        if (condition != NULL && condition->symbolData->symbolType == boolLiteral ) {
+            if (condition->symbolData->value.boolValue == 0) {
+                node = NULL;
+                return NULL; 
+            }
+        }
+    }
+    
+    return node;
 }

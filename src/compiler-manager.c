@@ -95,19 +95,22 @@ void makeOutputFile(int targetStage) {
 }
 
 void applyOptimization(int optimizationLevel) {
-	if (optimizationLevel != none) {
-		switch (optimizationLevel) {
-		case constants:
-			constantOptimizations();
-			break;
-		case dead_code:
-			break;
-		case memory:
-			break;
-		default:
-			break;
-		}
-	}
+    if (optimizationLevel != none) {
+        switch (optimizationLevel) {
+            case constants:
+                constantOptimizations();
+                break;
+            case dead_code:
+                deadCodeOptimizations();
+                break;
+            case all:
+                constantOptimizations();
+                deadCodeOptimizations();
+                break;
+			default:
+				break;
+        }
+    }
 }
 
 void scannerStage() {
