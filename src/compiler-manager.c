@@ -128,6 +128,7 @@ int semanticStage() {
 void codinterStage() {
 	int semanticResult = semanticStage();
 	constantOptimizations(optimizationLevel);
+	deadCodeOptimizations(optimizationLevel);
 	initCodinterGenerator();
 	if (semanticResult) {
 		generateCodinterFromAST(syntaxTree);

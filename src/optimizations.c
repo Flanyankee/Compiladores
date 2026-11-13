@@ -12,6 +12,12 @@ void constantOptimizations(enum optimizations optLevel) {
 	}
 }
 
+void deadCodeOptimizations(enum optimizations optLevel) {
+	if (optLevel == dead_code || optLevel == all) {
+		syntaxTree = optimizeUnreachableCode(syntaxTree);
+	}
+}
+
 ASTNode *constantOptimizationsHelper(ASTNode *node) {
 	if (node == NULL) {
 		return NULL;
@@ -72,10 +78,10 @@ Symbol *createLiteralSymbol(int isFloat, int isBool, float resFloat,
 
 ASTNode *foldConstantOperation(ASTNode *node, Symbol *leftSym,
                                Symbol *rightSym) {
+
 	enum symbolTypes op = node->symbolData->symbolType;
 	int hasFloat = (leftSym->type == tFloat || rightSym->type == tFloat);
 	int isBool = (leftSym->type == tBoolean || rightSym->type == tBoolean);
-	// ¿|| o &&?
 
 	float leftFloat = (leftSym->type == tFloat)
 	                      ? leftSym->value.floatValue
@@ -146,5 +152,33 @@ ASTNode *foldConstantOperation(ASTNode *node, Symbol *leftSym,
 	    createLiteralSymbol(hasFloat, isBool, resFloat, resInt);
 	return makeLeaf(resultSymbol);
 }
+ASTNode *optimizeUnreachableCode(ASTNode *node) {
+	if (node == NULL)
+		return NULL;
 
-void deadCodeOptimizations(enum optimizations optLevel) {}
+	node->left = optimizeUnreachableCode(node->left);
+	node->right = optimizeUnreachableCode(node->right);
+
+	if (node->symbolData->symbolType == statementList) {
+		ASTNode *currentStatement = node->left;
+		if (currentStatement != NULL && currentStatement->symbolData != NULL &&
+		    currentStatement->symbolData->symbolType == returnNode) {
+
+			node->right = NULL;
+		}
+	}
+
+	if (node->symbolData->symbolType == ifNode ||
+	    node->symbolData->symbolType == whileNode) {
+		ASTNode *condition = node->left;
+
+		if (condition != NULL &&
+		    condition->symbolData->symbolType == boolLiteral) {
+			if (condition->symbolData->value.boolValue == 0) {
+				node = NULL;
+				return NULL;
+			}
+		}
+	}
+	return node;
+}
