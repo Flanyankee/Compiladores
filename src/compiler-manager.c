@@ -94,22 +94,6 @@ void makeOutputFile(int targetStage) {
 	outputFilePtr = out;
 }
 
-void applyOptimization(int optimizationLevel) {
-	if (optimizationLevel != none) {
-		switch (optimizationLevel) {
-		case constants:
-			constantOptimizations();
-			break;
-		case dead_code:
-			break;
-		case memory:
-			break;
-		default:
-			break;
-		}
-	}
-}
-
 void scannerStage() {
 	yyin = source;
 	int token;
@@ -143,7 +127,7 @@ int semanticStage() {
 
 void codinterStage() {
 	int semanticResult = semanticStage();
-	applyOptimization(optimizationLevel);
+	constantOptimizations(optimizationLevel);
 	initCodinterGenerator();
 	if (semanticResult) {
 		generateCodinterFromAST(syntaxTree);

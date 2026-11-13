@@ -25,11 +25,12 @@
 %token AND_OP OR_OP ADD_OP MULT_OP SUBTRACT_OP ASIGN_OP DIV_OP MOD_OP LESS_OP GREATER_OP EQUALS_OP 
 %token DOT COMMA SEMICOLON LEFT_PARENTHESIS RIGHT_PARENTHESIS LEFT_BRACE RIGHT_BRACE UNDERSCORE EXCLAMATION 
 
-%left AND_OP OR_OP
 %left ADD_OP SUBTRACT_OP
 %left MULT_OP DIV_OP MOD_OP
-%right EXCLAMATION 
 %nonassoc GREATER_OP LESS_OP EQUALS_OP
+%left OR_OP
+%left AND_OP
+%right EXCLAMATION 
 
 %type <node> program v_d var_decl id_prime m_d method_decl t_i t_i_2 method_call m_c m_c_prime block expr stat statement else bin_op arith_op rel_op cond_op literal
 
