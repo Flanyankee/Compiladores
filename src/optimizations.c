@@ -152,6 +152,17 @@ ASTNode *foldConstantOperation(ASTNode *node, Symbol *leftSym,
 	    createLiteralSymbol(hasFloat, isBool, resFloat, resInt);
 	return makeLeaf(resultSymbol);
 }
+
+void freeAST(ASTNode *root) {
+    if (root == NULL) {
+        return;
+    }
+
+    freeAST(root->left);
+    freeAST(root->right);
+    free(root);
+}
+
 ASTNode *optimizeUnreachableCode(ASTNode *node) {
 	if (node == NULL)
 		return NULL;
@@ -164,6 +175,7 @@ ASTNode *optimizeUnreachableCode(ASTNode *node) {
 		if (currentStatement != NULL && currentStatement->symbolData != NULL &&
 		    currentStatement->symbolData->symbolType == returnNode) {
 
+			freeAST(node->right);
 			node->right = NULL;
 		}
 	}
@@ -175,7 +187,7 @@ ASTNode *optimizeUnreachableCode(ASTNode *node) {
 		if (condition != NULL &&
 		    condition->symbolData->symbolType == boolLiteral) {
 			if (condition->symbolData->value.boolValue == 0) {
-				node = NULL;
+				freeAST(node);
 				return NULL;
 			}
 		}
