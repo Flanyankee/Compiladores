@@ -1,0 +1,118 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[a4paper, margin=2cm]{geometry}
+\usepackage{fontspec}
+\usepackage[spanish, english, bidi=basic, provide=*]{babel}
+\babelprovide[import, onchar=ids fonts]{spanish}
+\babelfont{rm}{Noto Sans}
+\usepackage{enumitem}
+\setlist[itemize]{label=-}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\definecolor{primary}{RGB}{44, 62, 80}
+
+\begin{document}
+\sloppy
+\setlength{\emergencystretch}{3em}
+
+\begin{center}
+    {\LARGE \textbf{\textcolor{primary}{Documentación del Proyecto Compilador}}} \\
+    \vspace{0.5cm}
+    {\large \textbf{Etapa 6:} Optimizaciones de Código y Testing}
+\end{center}
+\vspace{0.8cm}
+
+\section{División del Trabajo}
+El desarrollo de la sexta y última etapa del compilador, centrada en el diseño e implementación del módulo de optimizaciones sobre el Árbol de Sintaxis Abstracta (\texttt{optimizations}), su integración con el gestor de compilación y la interfaz de línea de comandos, así como la elaboración de pruebas unitarias automatizadas, se realizó de manera colaborativa distribuyendo las responsabilidades de la siguiente forma:
+
+\begin{itemize}
+    \item \textbf{Diseño e implementación de Optimizaciones (\texttt{optimizations.c/.h}):} Gribaudo Re Francisco, Francisco Andreani y Valentín Pastre Thuer.
+    \item \textbf{Integración con el gestor del compilador y CLI (\texttt{compiler-manager.c/.h}, \texttt{cli.c}, \texttt{constants.h}):} Gribaudo Re Francisco, Francisco Andreani y Valentín Pastre Thuer.
+    \item \textbf{Elaboración de pruebas unitarias y de integración (\texttt{test\_optimizations.c}):} Gribaudo Re Francisco.
+\end{itemize}
+
+\section{Decisiones de Diseño, Suposiciones y Aclaraciones}
+Habiendo completado en las etapas previas la cadena completa de compilación desde el análisis léxico hasta la generación de código ensamblador x86-64, el objetivo de esta última etapa consistió en incorporar técnicas de optimización que reduzcan el costo computacional y el tamaño del código generado sin alterar la semántica del programa original.
+
+\begin{itemize}
+    \item \textbf{Optimización directa sobre el AST en Post-Orden:} Se decidió aplicar tanto el plegado de constantes (\textit{Constant Folding}) como la eliminación de código muerto/inalcanzable (\textit{Dead Code Elimination}) directamente sobre el Árbol de Sintaxis Abstracta (\texttt{syntaxTree}) inmediatamente después de la validación semántica y antes de la generación de Código Intermedio de Tres Direcciones (\texttt{codinter}). De esta manera, toda simplificación o poda realizada en el árbol impacta de forma transparente tanto en el archivo de código intermedio (\texttt{.ci}) como en el código ensamblador final (\texttt{.ass}), evitando la emisión innecesaria de variables temporales, etiquetas y saltos.
+    \item \textbf{Secuenciación de Pasadas (\textit{Constant Folding} previo a \textit{Dead Code}):} En \texttt{codinterStage()} se dispuso que \texttt{constantOptimizations} se ejecute antes que \texttt{deadCodeOptimizations}. Esta decisión permite que, cuando se invoca el compilador con el nivel \texttt{-opt all}, las expresiones condicionales compuestas por constantes booleanas (por ejemplo, \texttt{if (true \&\& false)} o \texttt{while (!true)}) sean primero reducidas a un único literal booleano (\texttt{false}) y posteriormente eliminadas por completo en la pasada de código inalcanzable.
+    \item \textbf{Gestión de Memoria Dinámica en la Poda del AST (\texttt{freeAST}):} A diferencia de una simple desconexión de punteros, se implementó la función recursiva \texttt{freeAST(ASTNode *root)} para liberar explícitamente la memoria de las ramas descartadas durante la eliminación de código inalcanzable (tanto en bloques condicionales falsos como en sentencias posteriores a un \texttt{return}), previniendo fugas de memoria (\textit{memory leaks}).
+    \item \textbf{Detección Temprana de División y Módulo por Cero:} Durante el plegado de constantes aritméticas, si se detecta en tiempo de compilación una operación de división (\texttt{divOp}) o módulo (\texttt{modOp}) cuyo divisor literal es \texttt{0} (o \texttt{0.0}), el optimizador informa el error por salida estándar y aborta la compilación con \texttt{exit(1)}, evitando generar código inválido o excepciones de punto flotante en tiempo de ejecución.
+\end{itemize}
+
+\section{Diseño y Decisiones Clave: El Módulo de Optimizaciones}
+El desarrollo central de esta etapa se encuentra en \texttt{src/optimizations.c} y \texttt{header/optimizations.h}, estructurado en torno a dos grandes algoritmos de transformación del AST:
+
+\begin{itemize}
+    \item \textbf{Plegado de Constantes (\texttt{constantOptimizations}, \texttt{constant\allowbreak Optimizations\allowbreak Helper}, \texttt{fold\allowbreak Constant\allowbreak Operation}, \texttt{create\allowbreak Literal\allowbreak Symbol}):}
+    \begin{itemize}
+        \item La función de entrada \texttt{constantOptimizations(enum optimizations optLevel)} verifica si el nivel solicitado corresponde a \texttt{constants} o \texttt{all}, invocando en tal caso a \texttt{constantOptimizationsHelper(\allowbreak syntaxTree)}.
+        \item \texttt{constantOptimizationsHelper} realiza un recorrido recursivo en \textbf{post-orden}, optimizando primero los subárboles izquierdo (\texttt{node->left}) y derecho (\texttt{node->right}). Esta estrategia de abajo hacia arriba (\textit{bottom-up}) garantiza que expresiones anidadas complejas como \texttt{(2 + 3) * 4 - 6 / 2} propaguen sus resultados parciales desde las hojas hacia la raíz en una sola pasada.
+        \item Si tras optimizar ambos hijos se comprueba que tanto el operando izquierdo como el derecho son hojas literales (\texttt{intLiteral}, \texttt{floatLiteral} o \texttt{boolLiteral}), o bien que se trata de un operador unario (\texttt{negationOp} o \texttt{substractOp}) aplicado sobre un literal, se delega la evaluación a \texttt{foldConstantOperation}.
+        \item \texttt{foldConstantOperation} extrae los valores almacenados en la unión \texttt{value} de los símbolos operandos (realizando la promoción a \texttt{float} cuando interviene algún \texttt{tFloat}) y resuelve en tiempo de compilación las operaciones aritméticas (\texttt{addOp}, \texttt{substractOp}, \texttt{multOp}, \texttt{divOp}, \texttt{modOp}), relacionales (\texttt{lessOp}, \texttt{greaterOp}, \texttt{equalsOp}) y lógicas (\texttt{andOp}, \texttt{orOp}, \texttt{negationOp}).
+        \item Finalmente, \texttt{createLiteralSymbol} instancia un nuevo \texttt{Symbol} con el tipo y valor resultante (\texttt{hasValue = 1}), y se retorna un nuevo nodo hoja mediante \texttt{makeLeaf(\allowbreak resultSymbol)} que reemplaza al subárbol de la operación original.
+    \end{itemize}
+
+    \item \textbf{Eliminación de Código Muerto e Inalcanzable (\texttt{deadCode\allowbreak Optimizations}, \texttt{optimize\allowbreak Unreachable\allowbreak Code}, \texttt{freeAST}):}
+    \begin{itemize}
+        \item La función \texttt{deadCodeOptimizations(enum optimizations optLevel)} se activa cuando el usuario especifica \texttt{dead\_code} o \texttt{all}, actualizando la raíz del árbol mediante \texttt{optimizeUnreachableCode(\allowbreak syntaxTree)}.
+        \item \texttt{optimizeUnreachableCode} recorre recursivamente el AST en post-orden e interviene sobre dos patrones estructurales de código inalcanzable:
+        \item \textbf{1. Sentencias posteriores a un \texttt{return} (\texttt{statementList}):} En la gramática del proyecto, las secuencias de sentencias se representan como listas enlazadas por derecha de nodos \texttt{statementList}, donde \texttt{node->left} aloja la sentencia actual y \texttt{node->right} apunta al resto de las sentencias del bloque. Cuando \texttt{optimizeUnreachableCode} detecta que \texttt{node->left} es un nodo \texttt{returnNode}, invoca a \texttt{freeAST(node->right)} y asigna \texttt{node->right = NULL}, podando todas las instrucciones inalcanzables que suceden al retorno dentro de ese bloque.
+        \item \textbf{2. Estructuras de control con condición constante falsa (\texttt{ifNode} y \texttt{whileNode}):} Cuando el nodo analizado es una sentencia condicional \texttt{if} o un ciclo \texttt{while}, se inspecciona su expresión de condición en \texttt{node->left}. Si la condición es un literal booleano (\texttt{boolLiteral}) cuyo valor de verdad es falso (\texttt{value.boolValue == 0}), el bloque nunca se ejecutará; por consiguiente, se libera la estructura completa mediante \texttt{freeAST(node)} y se retorna \texttt{NULL}.
+    \end{itemize}
+\end{itemize}
+
+\section{Integración con el Resto del Compilador}
+Para exponer y coordinar las distintas pasadas de optimización se actualizaron los siguientes componentes del compilador:
+
+\begin{itemize}
+    \item \textbf{Definición de Niveles de Optimización (\texttt{constants.h}):} Se definió el enumerado \texttt{enum optimizations \{ none, constants, dead\_code, memory, all \}} para representar internamente el modo de optimización seleccionado.
+    \item \textbf{Interfaz de Línea de Comandos (\texttt{cli.c/.h}):} En \texttt{handleCliInput()} se procesa el argumento posterior a la bandera \texttt{-opt}, y en \texttt{returnOptimization()} se traduce la cadena ingresada por consola (\texttt{"none"}, \texttt{"constants"}, \texttt{"dead-code"}, \texttt{"memory"} o \texttt{"all"}) al valor correspondiente del enumerado \texttt{enum optimizations}, estableciendo \texttt{none} como comportamiento por defecto cuando se omite la bandera.
+    \item \textbf{Gestor de Compilación (\texttt{compiler-manager.c/.h}):} Se incluyó \texttt{optimizations.h} y se integraron las llamadas a \texttt{constantOptimizations(\allowbreak optimizationLevel)} y \texttt{deadCodeOptimizations(\allowbreak optimizationLevel)} dentro de \texttt{codinterStage()}, justo después de ejecutar \texttt{semanticStage()} y antes de \texttt{initCodinterGenerator()} y \texttt{generateCodinterFromAST(\allowbreak syntaxTree)}. Gracias al diseño en cascada del gestor (\texttt{assemblyStage} invoca a \texttt{codinterStage}), las optimizaciones se aplican tanto al generar código intermedio (\texttt{-target codinter}) como al compilar hasta código ensamblador (\texttt{-target assembly}).
+\end{itemize}
+
+\section{Instrucciones de Compilación y Ejecución de Pruebas}
+El proyecto mantiene la integración con \textbf{Ceedling} (Unity + CMock) para la ejecución de pruebas unitarias y la compilación del ejecutable \texttt{c-tds}.
+
+\subsection*{5.1. Ejecución de Tests Unitarios con Ceedling}
+En esta etapa se desarrolló la suite \texttt{test/test\_optimizations.c}, la cual verifica directamente sobre el AST en memoria el plegado de expresiones aritméticas enteras combinadas, el plegado de expresiones booleanas con negación, el plegado parcial en expresiones que combinan variables con subexpresiones constantes, la poda de sentencias e iteraciones posteriores a un \texttt{return}, y la eliminación de bloques \texttt{if (false)} y \texttt{while (false)}:
+
+\begin{itemize}
+    \item \textbf{Correr tests del Módulo de Optimizaciones:}
+\begin{verbatim}
+./ceedling test:optimizations
+\end{verbatim}
+    \item \textbf{Correr la batería completa de tests del proyecto:}
+\begin{verbatim}
+./ceedling test:all
+\end{verbatim}
+\end{itemize}
+
+\subsection*{5.2. Construcción y Uso del Compilador con Banderas de Optimización}
+Para compilar la versión de lanzamiento (\textit{Release}) y ejecutar el compilador aplicando las distintas optimizaciones disponibles sobre un archivo fuente \texttt{.ctds}:
+{\footnotesize
+\begin{verbatim}
+./compile.sh
+
+# Aplicar únicamente plegado de constantes:
+./build/artifacts/release/c-tds -target assembly -opt constants -o salida prueba.ctds
+
+# Aplicar únicamente eliminación de código muerto/inalcanzable:
+./build/artifacts/release/c-tds -target assembly -opt dead-code -o salida prueba.ctds
+
+# Aplicar todas las optimizaciones disponibles:
+./build/artifacts/release/c-tds -target assembly -opt all -o salida prueba.ctds
+\end{verbatim}
+}
+
+\section{Problemas Conocidos y Testing}
+Durante el desarrollo y testeo de esta sexta etapa se identificaron y analizaron los siguientes aspectos técnicos:
+
+\begin{itemize}
+    \item \textbf{Plegado Parcial en Expresiones Mixtas:} Al evaluar expresiones donde intervienen tanto variables como constantes (por ejemplo, \texttt{x = x + (3 * 4);}), fue fundamental asegurar que \texttt{constant\allowbreak Optimizations\allowbreak Helper} conservara intacto el nodo padre (\texttt{addOp}) cuando uno de sus hijos es un identificador (\texttt{variable}), plegando únicamente el subárbol derecho (\texttt{3 * 4} a \texttt{12}). Este comportamiento fue validado mediante el test unitario \texttt{test\_\allowbreak constant\_\allowbreak folding\_\allowbreak parcial\_\allowbreak con\_\allowbreak variables}.
+    \item \textbf{Tipado de Operaciones Relacionales Plegadas y Resta Unaria:} En \texttt{fold\allowbreak Constant\allowbreak Operation}, la bandera \texttt{isBool} se determina inicialmente verificando si alguno de los operandos de entrada es de tipo \texttt{tBoolean}. Como consecuencia, mientras que las operaciones lógicas (\texttt{\&\&}, \texttt{||}, \texttt{!}) generan un nodo \texttt{boolLiteral}, las comparaciones relacionales entre literales numéricos (\texttt{<}, \texttt{>}, \texttt{==}) se pliegan actualmente en un \texttt{intLiteral} (\texttt{1} o \texttt{0}). Asimismo, dado que el parser representa la resta unaria (\texttt{-expr}) ubicando el operando en \texttt{node->left} y dejando \texttt{node->right} en \texttt{NULL}, la creación del símbolo comodín derecho en \texttt{constant\allowbreak Optimizations\allowbreak Helper} evalúa \texttt{leftInt - 0} en lugar de invertir el signo. Ambos casos fueron identificados durante las pruebas de caja blanca sobre el AST como oportunidades de mejora puntual en \texttt{fold\allowbreak Constant\allowbreak Operation}.
+    \item \textbf{Liberación Segura de Memoria entre Casos de Prueba:} Para evitar que los árboles sintácticos generados en cada test unitario de \texttt{test\_optimizations.c} quedaran retenidos en memoria al finalizar la prueba, se incorporó la llamada a \texttt{freeAST(syntaxTree)} dentro de la función \texttt{tearDown()} de Unity, verificando a la vez que la poda realizada por \texttt{optimize\allowbreak Unreachable\allowbreak Code} no dejara punteros colgantes (\textit{dangling pointers}) en el AST principal.
+\end{itemize}
+
+\end{document}
