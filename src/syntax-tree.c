@@ -27,3 +27,13 @@ Symbol *makeSymbol(char *id, enum symbolTypes symType) {
 	symbol->paramsNode = malloc(sizeof(Symbol));
 	return symbol;
 }
+
+void freeAST(ASTNode *root) {
+	if (root == NULL) {
+		return;
+	}
+
+	freeAST(root->left);
+	freeAST(root->right);
+	free(root);
+}

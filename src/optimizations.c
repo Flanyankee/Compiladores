@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-
 void constantOptimizations(enum optimizations optLevel) {
 	if (optLevel == constants || optLevel == all) {
 		syntaxTree = constantOptimizationsHelper(syntaxTree);
@@ -151,16 +150,6 @@ ASTNode *foldConstantOperation(ASTNode *node, Symbol *leftSym,
 	Symbol *resultSymbol =
 	    createLiteralSymbol(hasFloat, isBool, resFloat, resInt);
 	return makeLeaf(resultSymbol);
-}
-
-void freeAST(ASTNode *root) {
-    if (root == NULL) {
-        return;
-    }
-
-    freeAST(root->left);
-    freeAST(root->right);
-    free(root);
 }
 
 ASTNode *optimizeUnreachableCode(ASTNode *node) {

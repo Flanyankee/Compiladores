@@ -33,5 +33,6 @@ extern ASTNode *syntaxTree;
 
 ASTNode *makeNode(Symbol *symbol, ASTNode *left, ASTNode *right);
 ASTNode *makeLeaf(Symbol *symbol);
+void freeAST(ASTNode *node);
 Symbol *makeSymbol(char *id, enum symbolTypes symType);
 #endif

@@ -16,5 +16,4 @@ ASTNode *foldConstantOperation(ASTNode *node, Symbol *leftSym,
 Symbol *createLiteralSymbol(int isFloat, int isBool, float resFloat,
                             int resInt);
 
-void freeAST(ASTNode* node);
 #endif // OPTIMIZATIONS_H
