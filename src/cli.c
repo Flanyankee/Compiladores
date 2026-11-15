@@ -103,32 +103,28 @@ char *returnSourceFile() {
 }
 
 void printHelp() {
-	printf("Usage: c-tds [-target STAGE] [-o NAME] [-opt OPTIMIZ] [-debug] "
-	       "file.ctds\n");
-	printf("Options:\n");
-	printf("-o NAME\t\tRename the executable file to NAME\n");
-	printf("\n-target STAGE\tCompilation proceeds up to STAGE\n");
-	printf("\t\tor generates an executable file with .out extension\n");
-	printf("\t\tif no target is specified.\n");
-	printf("\t\tAvailable stages:\n");
-	printf("\t\t\tscan\t\t Generates a scanner whose filename ends in .lex\n");
-	printf("\t\t\tparse\t\t Generates a parser whose filename ends in .<falta "
-	       "completar>\n");
-	printf(
-	    "\t\t\tsemantic\t\t Generates a semantic analyzer whose filename ends "
-	    "in .sem\n");
-	printf("\t\t\tcodinter\t Generates an interpreter whose filename ends in "
-	       ".<falta completar>\n");
-	printf("\t\t\tassembly\t Generates assembly code whose filename ends in "
-	       ".<falta completar>\n");
-	printf("\n-opt OPTIMZ\tPerform the specified optimizations.\n");
-	printf("\t\tno optimization is performed\n");
-	printf("\t\tunless one is specified.\n");
-	printf("\t\tAvailable optimizations:\n");
-	printf("\t\t\tnone\t\t Performs no optimization.\n");
-	printf("\t\t\tconstants\t\t Performs no optimization.\n");
-	printf("\t\t\tdead-code\t\t Performs no optimization.\n");
-	printf("\t\t\tmemory\t\t Performs no optimization.\n");
-	printf("\t\t\tall\t\t Performs no optimization.\n");
-	printf("\n-debug\t\tPrint debug information.\n");
+    printf("Usage: c-tds [-target STAGE] [-o NAME] [-opt OPTIMIZ] [-debug] [-h|-help] file.ctds\n");
+    printf("\nOptions:\n");
+    printf("  -o NAME\t\tSet the base output filename to NAME (default: outputFile).\n");
+
+    printf("\n  -target STAGE\t\tCompilation proceeds up to STAGE.\n");
+    printf("\t\t\tIf no target is specified, compilation proceeds up to\n");
+    printf("\t\t\tthe assembly stage (.ass) by default.\n");
+    printf("\t\t\tAvailable stages:\n");
+    printf("\t\t\t  scan\t\tPerforms lexical analysis; output ends in .lex\n");
+    printf("\t\t\t  parse\t\tPerforms syntax analysis; output ends in .sint\n");
+    printf("\t\t\t  semantic\tPerforms semantic analysis; output ends in .sem\n");
+    printf("\t\t\t  codinter\tGenerates Three-Address Code (TAC); output ends in .ci\n");
+    printf("\t\t\t  assembly\tGenerates x86-64 assembly code; output ends in .ass\n");
+
+    printf("\n  -opt OPTIMIZATION\tPerform the specified optimizations before code generation.\n");
+    printf("\t\t\tNo optimization is performed unless one is specified.\n");
+    printf("\t\t\tAvailable optimizations:\n");
+    printf("\t\t\t  none\t\tPerforms no optimization (default).\n");
+    printf("\t\t\t  constants\tPerforms constant folding on arithmetic and logical expressions.\n");
+    printf("\t\t\t  dead-code\tRemoves unreachable statements after return and false blocks.\n");
+    printf("\t\t\t  all\t\tApplies both constant folding and dead-code elimination.\n");
+
+    printf("\n  -debug\t\tEnable debug information.\n");
+    printf("  -h, -help\t\tDisplay this help message and exit.\n");
 }
