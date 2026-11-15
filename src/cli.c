@@ -53,8 +53,6 @@ int returnOptimization() {
 		return constants;
 	} else if (strcmp(optimization, "dead-code") == 0) {
 		return dead_code;
-	} else if (strcmp(optimization, "memory") == 0) {
-		return memory;
 	} else {
 		return all;
 	}

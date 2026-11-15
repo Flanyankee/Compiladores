@@ -27,10 +27,10 @@
 
 %left ADD_OP SUBTRACT_OP
 %left MULT_OP DIV_OP MOD_OP
-%nonassoc GREATER_OP LESS_OP EQUALS_OP
 %left OR_OP
 %left AND_OP
 %right EXCLAMATION 
+%nonassoc GREATER_OP LESS_OP EQUALS_OP
 
 %type <node> program v_d var_decl id_prime m_d method_decl t_i t_i_2 method_call m_c m_c_prime block expr stat statement else bin_op arith_op rel_op cond_op literal
 
