@@ -28,7 +28,7 @@
 %left OR_OP
 %left AND_OP
 %right EXCLAMATION 
-%nonassoc GREATER_OP LESS_OP EQUALS_OP
+%nonassoc GREATER_OP LESS_OP EQUALS_OP LESSEQ_OP
 %left ADD_OP SUBTRACT_OP
 %left MULT_OP DIV_OP MOD_OP
 
@@ -366,6 +366,15 @@ rel_op : expr LESS_OP expr {
 		equalsSymbol->line = @2.first_line;
 		ASTNode* equalsNode = makeNode(equalsSymbol, $1, $3);
 		$$ = equalsNode;
+	 }
+	| expr LESSEQ_OP expr {
+		Symbol* greaterSymbol = makeSymbol("", greaterOp);
+		greaterSymbol->line = @2.first_line;
+		ASTNode* greaterNode = makeNode(greaterSymbol, $1, $3);
+		Symbol* negationSymbol = makeSymbol("", negationOp);
+		negationSymbol->line = @1.first_line;
+		ASTNode* negationNode = makeNode(negationSymbol, greaterNode, NULL);
+		$$ = negationNode;
 	 }
        ;
 
